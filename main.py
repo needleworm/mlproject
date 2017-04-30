@@ -81,7 +81,7 @@ def DCNN(image):
                                    stride=int(FLAGS.YDIM / current.get_shape().as_list()[1]))
         net[kind+index] = current
 
-    return net, current
+    return current
 
 
 def train(loss_val, var_list):
@@ -93,14 +93,13 @@ def train(loss_val, var_list):
 class Model(object):
     def __init__(self, batch_size, is_training=True):
         self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
-        self.image = tf.placeholder(tf.float32, shape=[batch_size,
+        self.low_resolution_image = tf.placeholder(tf.float32, shape=[batch_size,
                                                        FLAGS.YDIM, FLAGS.XDIM], name="input_image")
-        self.annotation = annotation = tf.placeholder(tf.int32, shape=[batch_size, IMAGE_SIZE * ANNO_RESIZE,
-                                                                       IMAGE_SIZE * ANNO_RESIZE, 1],
-                                                      name="annotation")
-        self.network, current = DCNN(self.image)
+        self.high_resolution_image = tf.placeholder(tf.float32, shape=[batch_size,
+                                                       FLAGS.YDIM, FLAGS.XDIM], name="GT_image")
+        self.output = DCNN(self.low_resolution_image)
 
-        self.loss = "loss here"
+        self.loss = "Calculate loss with self.output and self.high_resolution_image"
         trainable_var = tf.trainable_variables()
 
         self.train_op = train(self.loss, trainable_var)
