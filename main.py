@@ -32,12 +32,11 @@ if FLAGS.reset:
     os.popen("rm -rf " + logs_dir + " " + results_dir)
     os.popen("mkdir " + logs_dir + " " + results_dir)
 
-
-dropout_rate = 0.5
 learning_rate = 0.0001
 MAX_ITERATION = int(900)
 
-def dcnn(image):
+
+def DCNN(image):
     layers = (
         ###### Deconvolution Sub-Network ######
         # Relu is not applied on the original paper.
@@ -82,9 +81,30 @@ def dcnn(image):
                                    stride=int(FLAGS.YDIM / current.get_shape().as_list()[1]))
         net[kind+index] = current
 
-    output_image = tf.argmax(current, axis=3, name="output_image")
-
-    return tf.expand_dims(output_image, axis=3), net
+    return net, current
 
 
+def train(loss_val, var_list):
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    gradient = optimizer.compute_gradients(loss_val, var_list=var_list)
+    return optimizer.apply_gradients(gradient)
 
+
+class Model(object):
+    def __init__(self, batch_size, is_training=True):
+        self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
+        self.image = tf.placeholder(tf.float32, shape=[batch_size,
+                                                       FLAGS.YDIM, FLAGS.XDIM], name="input_image")
+        self.annotation = annotation = tf.placeholder(tf.int32, shape=[batch_size, IMAGE_SIZE * ANNO_RESIZE,
+                                                                       IMAGE_SIZE * ANNO_RESIZE, 1],
+                                                      name="annotation")
+        self.network, current = DCNN(self.image)
+
+        self.loss = "loss here"
+        trainable_var = tf.trainable_variables()
+
+        self.train_op = train(self.loss, trainable_var)
+
+
+def main():
+    pass
