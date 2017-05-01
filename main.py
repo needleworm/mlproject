@@ -36,14 +36,16 @@ learning_rate = 0.0001
 MAX_ITERATION = int(900)
 
 
-def DCNN(image):
+def DCNN(color):
+    image = tf.placeholder(tf.float32, [None, FLAGS.YDIM, FLAGS.XDIM])
+
     layers = (
         ###### Deconvolution Sub-Network ######
         # Relu is not applied on the original paper.
         'index:1_1, type:conv, xsize:121, ysize:1,   stride:1, fm: 1  -> 38'
-        #'index:1_1, type:relu'
+        #'index:1_1, type:relu' # uncomment this line apply relu
         'index:1_2, type:conv, xsize:1,   ysize:121, stride:1, fm: 38 -> 38'
-        #'index:1_2, type:relu'
+        #'index:1_2, type:relu' # uncomment this line apply relu
         'index:1_3, type:conv, xsize:16,   ysize:16, stride:1, fm: 38 -> 38'
 
         #### Outlier Rejection Sub-Network ####
@@ -62,47 +64,106 @@ def DCNN(image):
         kind = spec[3]
         if kind == 'conv':
             conv_shape, stride = utils.get_conv_shape(name)
-            kernels = utils.weight_variable(conv_shape, name=kind+index+"_W")
-            bias = utils.bias_variable([conv_shape[-1]], name=kind+index+"_b")
+            kernels = utils.weight_variable(conv_shape, name=kind+index+"_W"+color)
+            bias = utils.bias_variable([conv_shape[-1]], name=kind+index+"_b"+color)
             current = utils.conv2d(current, kernels, bias, stride=stride)
         elif kind=='relu':
             current = tf.nn.relu(current, name=kind+index)
         elif kind == 'deconv':
             deconv_shape, stride = utils.get_conv_shape(name)
-            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW")
-            bias = utils.bias_variable([deconv_shape[-1]], name=kind+index+"_db")
+            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW"+color)
+            bias = utils.bias_variable([deconv_shape[-1]], name=kind+index+"_db"+color)
             current = utils.deconv(current, kernels, bias, output_shape=tf.shape(current))
         elif kind == "deconv_out":
             shape = image.get_shape().as_list()
             deconv_shape, stride = utils.get_conv_shape(name)
-            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW")
-            bias = utils.bias_variable([deconv_shape[-1]], name=kind + index + "_db")
+            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW"+color)
+            bias = utils.bias_variable([deconv_shape[-1]], name=kind + index + "_db"+color)
             current = utils.deconv(current, kernels, bias, output_shape=(shape[0], FLAGS.YDIM, FLAGS.XDIM, 1),
                                    stride=int(FLAGS.YDIM / current.get_shape().as_list()[1]))
         net[kind+index] = current
 
-    return current
-
-
-def train(loss_val, var_list):
-    optimizer = tf.train.AdamOptimizer(learning_rate)
-    gradient = optimizer.compute_gradients(loss_val, var_list=var_list)
-    return optimizer.apply_gradients(gradient)
+    return image, current
 
 
 class Model(object):
     def __init__(self, batch_size, is_training=True):
-        self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
         self.low_resolution_image = tf.placeholder(tf.float32, shape=[batch_size,
                                                        FLAGS.YDIM, FLAGS.XDIM], name="input_image")
         self.high_resolution_image = tf.placeholder(tf.float32, shape=[batch_size,
                                                        FLAGS.YDIM, FLAGS.XDIM], name="GT_image")
-        self.output = DCNN(self.low_resolution_image)
 
-        self.loss = "Calculate loss with self.output and self.high_resolution_image"
+
         trainable_var = tf.trainable_variables()
 
         self.train_op = train(self.loss, trainable_var)
+
+
+def train(is_training=True):
+    with tf.device(FLAGS.device):
+        ###############################  GRAPH PART  ###############################
+        print("Graph Initialization...")
+        input_R, output_R = DCNN(color="R")
+        input_G, output_G = DCNN(color="G")
+        input_B, output_B = DCNN(color="B")
+        print("Done")
+
+        ############################  Placeholder Part  ############################
+        print("Setting up Placeholders...")
+        high_resolution_image = tf.placeholder(tf.float32, [None, FLAGS.YDIM, FLAGS.XDIM])
+
+        Loss_R = tf.reduce_sum(tf.square((high_resolution_image[0] - output_R) ** 2) / FLAGS.YDIM / FLAGS.XDIM)
+        Loss_G = tf.reduce_sum(tf.square((high_resolution_image[1] - output_G) ** 2) / FLAGS.YDIM / FLAGS.XDIM)
+        Loss_B = tf.reduce_sum(tf.square((high_resolution_image[2] - output_B) ** 2) / FLAGS.YDIM / FLAGS.XDIM)
+        trainable_var = tf.trainable_variables()
+        optimizer_R = tf.train.AdamOptimizer(learning_rate)
+        optimizer_G = tf.train.AdamOptimizer(learning_rate)
+        optimizer_B = tf.train.AdamOptimizer(learning_rate)
+
+        gradient_R = optimizer_R.compute_gradients(Loss_R, trainable_var)
+        gradient_G = optimizer_G.compute_gradients(Loss_G, trainable_var)
+        gradient_B = optimizer_B.compute_gradients(Loss_B, trainable_var)
+
+        train_op_R = optimizer_R.appy_gradients(gradient_R)
+        train_op_G = optimizer_G.appy_gradients(gradient_G)
+        train_op_B = optimizer_B.appy_gradients(gradient_B)
+        print("Done")
+
+        ##############################  Summary Part  ##############################
+        print("Setting up summary op...")
+        loss_placeholder = tf.placeholder(dtype=tf.float32)
+        loss_summary_op = tf.summary.scalar("LOSS", loss_placeholder)
+        loss_summary_writer = tf.summary.FileWriter(logs_dir + "/loss/")
+        mse_R_placeholder = tf.placeholder(dtype=tf.float32)
+        mes_Rsummary = tf.summary.scalar("MSE_R", mse_placeholdere)
+        mse_Rsummary_writer = tf.summary.FileWriter(logs_dir + "/mse_r/")
+        mse_G_placeholder = tf.placeholder(dtype=tf.float32)
+        mes_Gsummary = tf.summary.scalar("MSE_G", mse_placeholdere)
+        mse_Gsummary_writer = tf.summary.FileWriter(logs_dir + "/mse_g/")
+        mse_B_placeholder = tf.placeholder(dtype=tf.float32)
+        mes_Bsummary = tf.summary.scalar("MSE_B", mse_placeholdere)
+        mse_Bsummary_writer = tf.summary.FileWriter(logs_dir + "/mse_b/")
+        print("Done")
+
+        ############################  Model Save Part  #############################
+        print("Setting up Saver...")
+        saver = tf.train.Saver()
+        ckpt = tf.train.get_checkpoint_state(logs_dir)
+        print("Done")
+
+
+    ################################  Session Part  ################################
+    print("Session Initialization...")
+    sess_config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
+    sess_config.gpu_options.allow_growth = True
+    sess = tf.InteractiveSession(config=sess_config)
+
+    if ckpt and ckpt.model_checkpoint_path:
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        print("model restored...")
+    else:
+        sess.run(tf.global_variables_initializer())
+
 
 
 def main():
