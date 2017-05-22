@@ -1,7 +1,6 @@
 import scipy
 import scipy.misc
 import os
-#import PIL
 from PIL import Image
 import numpy as np
 import scipy as sp
@@ -56,7 +55,6 @@ class Dataset:
         if not self.cur_idx < self.max_idx:
             self.cur_idx=0
         return in_image,gt_image        
-
     input_shape=None
     gt_shape=None
     cur_idx=0
