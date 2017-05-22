@@ -12,32 +12,29 @@ import tensorflow as tf
 import Utils as utils
 decay=0.9
 stddev=0.02
-NUM_OF_CLASSES=2
 
-class Generator(object):
-    def __init__(self, batch_size, window_size, debug, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
+class Generator:
+    def __init__(self, batch_size, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
 
         self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
-        self.image = tf.placeholder(tf.float32,
-                                    shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, window_size * 2 + 1],
-                                    name="input_image")
-        self.Generator_Graph = Generator_Graph(is_training, window_size)
-        self.pred_annotation, self.logits = self.Generator_Graph.generator(self.image, is_training, keep_prob, debug)
 
+        self.Generator_Graph = Generator_Graph(is_training)
+
+    def generate(self, image, is_training, keep_prob):
+        pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob)
         trainable_var = tf.trainable_variables()
 
         if debug:
             for var in trainable_var:
                 utils.add_to_regularization_and_summary(var)
-        if is_training and debug:
-            self.summary_op = tf.summary.merge_all()
+        return pred_annotation, logits
 
 
 class Generator_Graph:
-    def __init__(self, window_size, is_training=True):
+    def __init__(self, is_training=True):
         self.is_training = is_training
         # Encoder
-        self.CNN1_shape  = [2, 2, window_size * 2 +1, 32]
+        self.CNN1_shape  = [2, 2, 3, 32]
         self.CNN1_kernel = tf.get_variable("E_CNN_1_W", initializer=tf.truncated_normal(self.CNN1_shape, stddev=stddev))
         self.CNN1_bias   = tf.get_variable("E_CNN_1_B", initializer=tf.constant(0.0, shape=[self.CNN1_shape[-1]]))
 
@@ -62,11 +59,11 @@ class Generator_Graph:
         self.CNN7_kernel = tf.get_variable("D_CNN_7_W", initializer=tf.truncated_normal(self.CNN7_shape, stddev=stddev))
         self.CNN7_bias   = tf.get_variable("D_CNN_7_B", initializer=tf.constant(0.0, shape=[self.CNN7_shape[-1]]))
 
-        self.CNN8_shape  = [1, 1, 128, NUM_OF_CLASSES]
+        self.CNN8_shape  = [1, 1, 128, 3]
         self.CNN8_kernel = tf.get_variable("D_CNN_8_W", initializer=tf.truncated_normal(self.CNN8_shape, stddev=stddev))
         self.CNN8_bias   = tf.get_variable("D_CNN_8_B", initializer=tf.constant(0.0, shape=[self.CNN8_shape[-1]]))
 
-    def Encoder(self, image, is_training):
+    def _Encoder(self, image, is_training):
         net = []
         net.append(image)
         stride=1
@@ -105,7 +102,7 @@ class Generator_Graph:
 
         return net
 
-    def Decoder(self, encoder, keep_prob, is_training, debug, IMAGE_SIZE=1024, ANNO_RESIZE=1.0):
+    def _Decoder(self, encoder, keep_prob, is_training, IMAGE_SIZE=1024, ANNO_RESIZE=1.0):
         """
         Semantic segmentation network definition
         :param image: input image. Should have values in range 0-255
@@ -124,7 +121,6 @@ class Generator_Graph:
             C6 = tf.nn.bias_add(C6, self.CNN6_bias)
             C6 = tf.contrib.layers.batch_norm(C6, decay=decay, is_training=is_training, updates_collections=None)
             R6 = tf.nn.relu(C6)
-            if debug: utils.add_activation_summary(R6)
             D6 = tf.nn.dropout(R6, keep_prob=keep_prob)
 
             # Conv-Relu-Dropout 7
@@ -132,7 +128,6 @@ class Generator_Graph:
             C7 = tf.nn.bias_add(C7, self.CNN7_bias)
             C7 = tf.contrib.layers.batch_norm(C7, decay=decay, is_training=is_training, updates_collections=None)
             R7 = tf.nn.relu(C7)
-            if debug: utils.add_activation_summary(R7)
             D7 = tf.nn.dropout(R7, keep_prob=keep_prob)
 
             # Conv-Relu-Dropout 8
@@ -140,14 +135,13 @@ class Generator_Graph:
             C8 = tf.nn.bias_add(C8, self.CNN8_bias)
             C8 = tf.contrib.layers.batch_norm(C8, decay=decay, is_training=is_training, updates_collections=None)
             R8 = tf.nn.relu(C8)
-            if debug: utils.add_activation_summary(R8)
             D8 = tf.nn.dropout(R8, keep_prob=keep_prob)
 
             # Upscaling
             # Deconv 1
             stride = 2
             deconv_shape_1 = encoder[4].get_shape()
-            self.DCNN1_shape  = [4, 4, deconv_shape_1[3].value, NUM_OF_CLASSES]
+            self.DCNN1_shape  = [4, 4, deconv_shape_1[3].value, 3]
             self.DCNN1_kernel = tf.get_variable("D_DCNN_1_W", initializer=tf.truncated_normal(self.DCNN1_shape, stddev=stddev))
             self.DCNN1_bias   = tf.get_variable("D_DCNN_1_B", initializer=tf.constant(0.0, shape=[self.DCNN1_shape[-2]]))
 
@@ -168,41 +162,32 @@ class Generator_Graph:
             # Deconv 3
             shape = encoder[0].get_shape().as_list()
             deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), NUM_OF_CLASSES)
-            self.DCNN3_shape  = [16, 16, NUM_OF_CLASSES, deconv_shape_2[3].value]
+            self.DCNN3_shape  = [16, 16, 3, deconv_shape_2[3].value]
             self.DCNN3_kernel = tf.get_variable("D_DCNN_3_W", initializer=tf.truncated_normal(self.DCNN3_shape, stddev=stddev))
             self.DCNN3_bias   = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[self.DCNN3_shape[-2]]))
 
             DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, stride, stride, 1], padding="SAME")
             DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias)
 
-            annotation_prde = tf.argmax(DC3, axis=3, name="prediction")
-        return tf.expand_dims(annotation_prde, axis=3), DC3
+            output = tf.sigmoid(DC3) * 255
+        return output, DC3
 
-    def generator(self, image, is_training, keep_prob, debug):
-        self.encoder = self.Encoder(image, is_training)
-        self.decoder = self.Decoder(self.encoder, keep_prob, is_training, debug)
+    def generator(self, image, is_training, keep_prob):
+        self.encoder = self._Encoder(image, is_training)
+        self.decoder = self._Decoder(self.encoder, keep_prob, is_training)
         return self.decoder
 
 
-class Discriminator(object):
-    def __init__(self, debug, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
+class Discriminator:
+    def __init__(self, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
 
         self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
-        self.image = tf.placeholder(tf.float32,
-                                    shape=[1, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3],
-                                    name="input_image")
-        # R, G, B are separated as window.
-
         self.Discriminator_Graph = Discriminator_Graph(is_training)
-        self.pred_annotation, self.logits = self.Discriminator_Graph.discriminator(self.image, is_training, keep_prob, debug)
 
+    def discriminate(self, image, is_training, keep_prob):
+        disc, logits = self.Discriminator_Graph.discriminator(image, is_training, keep_prob)
         trainable_var = tf.trainable_variables()
-
-        if debug:
-            for var in trainable_var:
-                utils.add_to_regularization_and_summary(var)
-        if is_training and debug:
-            self.summary_op = tf.summary.merge_all()
+        return disc, logits
 
 
 class Discriminator_Graph:
@@ -295,7 +280,7 @@ class Discriminator_Graph:
         self.FNN20_kernel = tf.get_variable("DISC_FNN_20_W", initializer=tf.truncated_normal(self.FNN20_shape, stddev=stddev))
         self.FNN20_bias = tf.get_variable("DISC_FNN_20_B", initializer=tf.constant(0.0, shape=[self.FNN20_shape[-1]]))
 
-    def Graph(self, image, is_training):
+    def Graph(self, image, is_training, keep_prob):
         net = []
         net.append(image)
         stride=1
@@ -416,15 +401,12 @@ class Discriminator_Graph:
         F20 = tf.nn.bias_add(F20, self.FNN20_bias)
 
         out = tf.nn.softmax(F20)
+        print(out.get_shape)
 
         net.append(out)
 
-        return net
+        return out, net
 
-    def discriminator(self, image, is_training, keep_prob, debug):
-        return self.Graph(image, is_training), 1
+    def discriminator(self, image, is_training, keep_prob):
+        return self.Graph(image, is_training, keep_prob)
 
-
-
-a = Generator(1, 1, True)
-b = Discriminator(5, 1, True)
