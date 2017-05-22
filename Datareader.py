@@ -73,7 +73,6 @@ class Dataset:
             i_image,g_image=self.get_batch_inputs(path,idx)
             in_image.append(i_image)
             gt_image.append(g_image)
-            cur_idx+=1
             idx+=1
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
