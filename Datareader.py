@@ -41,8 +41,8 @@ class Dataset:
         in_image=[]
         gt_image=[]
         cur_idx=self.cur_idx
+        idx= cur_idx
         for i in range(batch_size):
-            idx = cur_idx+i
             if not idx <self.max_idx:
                 idx=0
             path = self.path+self.files[idx]
@@ -56,6 +56,7 @@ class Dataset:
    #        ret.show()
             in_image.append(i_image)
             gt_image.append(g_image)
+            idx+=1
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
         self.cur_idx=(cur_idx+batch_size)%self.max_idx # update for next batching
@@ -64,19 +65,20 @@ class Dataset:
         in_image=[]
         gt_image=[]
         cur_idx = random.random(0,max_idx)
+        idx=cur_idx
         for i in range(batch_size):
-            if not cur_idx < self.max_idx:
-                cur_idx=0
-            path =self.path+self.files[cur_idx]
-            i_image,g_image=self.get_batch_inputs(path,cur_idx)
+            if not idx < self.max_idx:
+                idx=0
+            path =self.path+self.files[idx]
+            i_image,g_image=self.get_batch_inputs(path,idx)
             in_image.append(i_image)
             gt_image.append(g_image)
             cur_idx+=1
+            idx+=1
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
         self.cur_idx=(cur_idx+batch_size)%self.max_idx # update for next batching 
         return in_image,gt_image        
-
 
     input_shape=None
     gt_shape=None
