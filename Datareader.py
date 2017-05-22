@@ -41,12 +41,9 @@ class Dataset:
         in_image=[]
         gt_image=[]
         cur_idx=self.cur_idx
-        idx= cur_idx
         for i in range(batch_size):
-            if not idx <self.max_idx:
-                idx=0
-            path = self.path+self.files[idx]
-            i_image,g_image = self.get_batch_inputs(path,idx)
+            path = self.path+self.files[cur_idx]
+            i_image,g_image = self.get_batch_inputs(path,cur_idx)
    # for debug
    #        formatted = self.change_format(i_image)
    #        ret = Image.fromarray(formatted)
@@ -56,27 +53,24 @@ class Dataset:
    #        ret.show()
             in_image.append(i_image)
             gt_image.append(g_image)
-            idx+=1
+            cur_idx = (cur_idx+1)%self.max_idx
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
-        self.cur_idx=(cur_idx+batch_size)%self.max_idx # update for next batching
+        self.cur_idx=cur_idx # update for next batching
         return in_image,gt_image        
     def random_batch(self,batch_size):
         in_image=[]
         gt_image=[]
         cur_idx = random.random(0,max_idx)
-        idx=cur_idx
         for i in range(batch_size):
-            if not idx < self.max_idx:
-                idx=0
-            path =self.path+self.files[idx]
-            i_image,g_image=self.get_batch_inputs(path,idx)
+            path =self.path+self.files[cur_idx]
+            i_image,g_image=self.get_batch_inputs(path,cur_idx)
             in_image.append(i_image)
             gt_image.append(g_image)
-            idx+=1
+            cur_idx = (cur_idx+1)%self.max_idx
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
-        self.cur_idx=(cur_idx+batch_size)%self.max_idx # update for next batching 
+        self.cur_idx=cur_idx # update for next batching 
         return in_image,gt_image        
 
     input_shape=None
