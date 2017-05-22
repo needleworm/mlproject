@@ -6,17 +6,66 @@
         2017.04.15.
 """
 
-__author__ = 'BHBAN, JTKIM, YHHAN and YWKANG'
+__author__ = 'BHBAN'
 
 import tensorflow as tf
 import Utils as utils
 decay=0.9
 stddev=0.02
 
+
+def DCNN(color):
+    image = tf.placeholder(tf.float32, [None, FLAGS.YDIM, FLAGS.XDIM])
+
+    layers = (
+        ###### Deconvolution Sub-Network ######
+        # Relu is not applied on the original paper.
+        'index:1_1, type:conv, xsize:121, ysize:1,   stride:1, fm: 1  -> 38'
+        #'index:1_1, type:relu' # uncomment this line apply relu
+        'index:1_2, type:conv, xsize:1,   ysize:121, stride:1, fm: 38 -> 38'
+        #'index:1_2, type:relu' # uncomment this line apply relu
+        'index:1_3, type:conv, xsize:16,   ysize:16, stride:1, fm: 38 -> 38'
+
+        #### Outlier Rejection Sub-Network ####
+        'index:2_1, type:deconv, xsize:1,   ysize:1, stride:1, fm: 38 -> 512'
+        'index:2_2, type:deconv, xsize:8,   ysize:8, stride:1, fm: 512 -> 512'
+
+        #### Image Output Layer ####
+        'index:3, type:deconv_out, xsize:8,   ysize:8, stride:1, fm: 512 -> 512'
+    )
+
+    net = {}
+    current = image
+    for i, name in enumerate(layers):
+        spec = re.split(':|, |->', name)
+        index = spec[1]
+        kind = spec[3]
+        if kind == 'conv':
+            conv_shape, stride = utils.get_conv_shape(name)
+            kernels = utils.weight_variable(conv_shape, name=kind+index+"_W"+color)
+            bias = utils.bias_variable([conv_shape[-1]], name=kind+index+"_b"+color)
+            current = utils.conv2d(current, kernels, bias, stride=stride)
+        elif kind=='relu':
+            current = tf.nn.relu(current, name=kind+index)
+        elif kind == 'deconv':
+            deconv_shape, stride = utils.get_conv_shape(name)
+            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW"+color)
+            bias = utils.bias_variable([deconv_shape[-1]], name=kind+index+"_db"+color)
+            current = utils.deconv(current, kernels, bias, output_shape=tf.shape(current))
+        elif kind == "deconv_out":
+            shape = image.get_shape().as_list()
+            deconv_shape, stride = utils.get_conv_shape(name)
+            kernels = utils.weight_variable(deconv_shape, name=kind+index+"_dW"+color)
+            bias = utils.bias_variable([deconv_shape[-1]], name=kind + index + "_db"+color)
+            current = utils.deconv(current, kernels, bias, output_shape=(shape[0], FLAGS.YDIM, FLAGS.XDIM, 1),
+                                   stride=int(FLAGS.YDIM / current.get_shape().as_list()[1]))
+        net[kind+index] = current
+
+    return image, current
+
+
 class Generator:
     def __init__(self, batch_size, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
-
-        self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
 
         self.Generator_Graph = Generator_Graph(is_training)
 
@@ -181,7 +230,6 @@ class Generator_Graph:
 class Discriminator:
     def __init__(self, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
 
-        self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
         self.Discriminator_Graph = Discriminator_Graph(is_training)
 
     def discriminate(self, image, is_training, keep_prob):
