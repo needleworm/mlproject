@@ -6,7 +6,7 @@
         2017.04.15.
 """
 
-__author__ = 'BHBAN'
+__author__ = 'BHBAN, JTKIM'
 
 import tensorflow as tf
 import Utils as utils
