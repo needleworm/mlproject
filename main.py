@@ -226,7 +226,7 @@ def train(is_training=True):
             """
         """
         implement here result plotting.
-        use plt.show()
+        use plt.show() 
         """
 
 def main():
