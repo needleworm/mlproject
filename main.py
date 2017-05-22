@@ -1,3 +1,12 @@
+"""
+    Author : Byunghyun Ban
+    SBIE @ KAIST
+    needleworm@kaist.ac.kr
+    latest modification :
+        2017.04.15.
+"""
+
+
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
@@ -13,7 +22,7 @@ import getopt
 import Evaluator as ev
 import GAN_model as GM
 
-__author__ = 'BHBAN'
+__author__ = 'BHBAN, JTKIM'
 
 
 logs_dir = "logs"
