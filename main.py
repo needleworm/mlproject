@@ -10,15 +10,10 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-import re
-import Utils as utils
 import datetime
-import seaborn as sns
-import matplotlib.pyplot as plt
 import Datareader as dr
 import sys
 import os
-import getopt
 import Evaluator as ev
 import GAN_model as GM
 
