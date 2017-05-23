@@ -15,7 +15,7 @@ import Utils as utils
 import datetime
 import seaborn as sns
 import matplotlib.pyplot as plt
-import DataReader as dr
+import Datareader as dr
 import sys
 import os
 import getopt
@@ -51,10 +51,14 @@ if FLAGS.reset:
         os.popen('rm -rf ' + logs_dir + '/*')
 
     os.popen('mkdir ' + logs_dir)
-    os.popen('mkdir ' + logs_dir + '/train_d')
-    os.popen('mkdir ' + logs_dir + '/train_g')
-    os.popen('mkdir ' + logs_dir + '/valid_d')
-    os.popen('mkdir ' + logs_dir + '/valid_g')
+    os.popen('mkdir ' + logs_dir + '/train')
+    os.popen('mkdir ' + logs_dir + '/valid')
+    os.popen('mkdir ' + logs_dir + '/train/psnr')
+    os.popen('mkdir ' + logs_dir + '/train/loss_g')
+    os.popen('mkdir ' + logs_dir + '/train/loss_d')
+    os.popen('mkdir ' + logs_dir + '/valid/psnr')
+    os.popen('mkdir ' + logs_dir + '/valid/loss_g')
+    os.popen('mkdir ' + logs_dir + '/valid/loss_d')
     os.popen('mkdir ' + logs_dir + '/images')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
@@ -69,8 +73,9 @@ stddev = 0.02
 stride = 1
 keep_prob = 0.5
 
+
 class GAN:
-    def __init__(self, batch_size, is_training=True):
+    def __init__(self, batch_size, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5, is_training=True):
         self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
         self.low_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3], name="row_resolution_image")
         self.high_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3], name="high_resolution_image")
@@ -116,6 +121,7 @@ class GAN:
         return optimizer.apply_gradients(grads_d), optimizer.apply_gradients(grads_g)
 
 
+
 def train(is_training=True):
     ###############################  GRAPH PART  ###############################
     print("Graph Initialization...")
@@ -136,10 +142,17 @@ def train(is_training=True):
     loss_g_summary_op = tf.summary.scalar("LOSS_g", loss_g_ph)
     psnr_ph = tf.placeholder(dtype=tf.float32)
     psnr_summary_op = tf.summary.scalar("PSNR", psnr_ph)
-    train_summary_writer_d = tf.summary.FileWriter(logs_dir + '/train/', max_queue=2)
-    valid_summary_writer_d = tf.summary.FileWriter(logs_dir + '/valid/', max_queue=2)
-    train_summary_writer_g = tf.summary.FileWriter(logs_dir + '/train/', max_queue=2)
-    valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/', max_queue=2)
+
+    train_summary_writer_d = tf.summary.FileWriter(logs_dir + '/train/loss_d', max_queue=2)
+    valid_summary_writer_d = tf.summary.FileWriter(logs_dir + '/valid/loss_d', max_queue=2)
+    train_summary_writer_g = tf.summary.FileWriter(logs_dir + '/train/loss_g', max_queue=2)
+    valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/loss_g', max_queue=2)
+    train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr')
+    valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr')
+
+    generator_summary_writer = tf.summary.FileWriter(logs_dir + '/generator/', max_queue=2)
+    discriminator_summary_writer = tf.summary.FileWriter(logs_dir + '/discriminator/', max_queue=2)
+
     print("Done")
 
     ############################  Model Save Part  #############################
@@ -208,10 +221,16 @@ def train(is_training=True):
                 valid_summary_writer_d.add_summary(valid_summary_str_d, itr)
                 valid_summary_writer_g.add_summary(valid_summary_str_g, itr)
 
-                """
-                Implement PSNR calculation and save here
-                with train_pred and valid_pred
-                """
+                train_psnr = ev.psnr(FLAGS.tr_batch_size, train_high_resolution_image, train_pred)
+                valid_psnr = ev.psnr(FLAGS.val_batch_size, valid_high_resolution_image, valid_pred)
+                train_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: train_psnr})
+                valid_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: valid_psnr})
+                print("%s ---> Validation_PSNR: %g" % (datetime.datetime.now(), valid_psnr))
+                print("Step: %d, Train_PSNR:%g" % (itr, train_psnr))
+                train_psnr_writer.add_graph(sess.graph)
+                valid_psnr_writer.add_graph(sess.graph)
+                train_psnr_writer.add_summary(train_psnr_str, itr)
+                valid_psnr_writer.add_summary(valid_psnr_str, itr)
 
             if itr % 50 == 0:
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
@@ -247,7 +266,7 @@ def train(is_training=True):
             """
         """
         implement here result plotting.
-        use plt.show()
+        use plt.show() 
         """
 
 def main():
