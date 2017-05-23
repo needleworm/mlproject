@@ -104,8 +104,8 @@ class GAN:
         by loss_d, Discriminator trains to figure out whether given image is real or not.
             With this process, We hope the generator to draw better image.
         """
-        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) - self.loss_g
         self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
+        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) - self.loss_g
 
         trainable_var = tf.trainable_variables()
 
@@ -117,7 +117,6 @@ class GAN:
         grads_g = optimizer.compute_gradients(self.loss_g, var_list=var_list)
 
         return optimizer.apply_gradients(grads_d), optimizer.apply_gradients(grads_g)
-
 
 
 def train(is_training=True):
@@ -258,4 +257,7 @@ def train(is_training=True):
 
 
 def main():
+    train(True)
     pass
+
+main()
