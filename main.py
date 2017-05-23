@@ -16,6 +16,7 @@ import sys
 import os
 import Evaluator as ev
 import GAN_model as GM
+import utils
 
 __author__ = 'BHBAN'
 
@@ -236,13 +237,8 @@ def train(is_training=True):
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
-
-                for i in range(FLAGS.val_batch_size):
-                    """
-                    Implement here image saving.
-                    Input, Output, Ground Truth to be aligned in one JPG image.
-                    """
-
+                utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                  visual_high_resolution_image)
                 print('validation images were saved!')
 
     ###########################     Visualize     ##############################
@@ -254,15 +250,13 @@ def train(is_training=True):
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        for i in range(FLAGS.val_batch_size):
-            """
-            Implement here image saving.
-            Input, Output, Ground Truth to be aligned in one JPG image.
-            """
+        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                          visual_high_resolution_image)
         """
         implement here result plotting.
         use plt.show() 
         """
+
 
 def main():
     pass
