@@ -3,7 +3,7 @@
     SBIE @ KAIST
     needleworm@kaist.ac.kr
     latest modification :
-        2017.04.15.
+        2017.05.23.
 """
 
 
@@ -22,7 +22,7 @@ import getopt
 import Evaluator as ev
 import GAN_model as GM
 
-__author__ = 'BHBAN, JTKIM'
+__author__ = 'BHBAN'
 
 
 logs_dir = "logs"
@@ -51,7 +51,10 @@ if FLAGS.reset:
         os.popen('rm -rf ' + logs_dir + '/*')
 
     os.popen('mkdir ' + logs_dir)
-    os.popen('mkdir ' + logs_dir + '/train')
+    os.popen('mkdir ' + logs_dir + '/train_d')
+    os.popen('mkdir ' + logs_dir + '/train_g')
+    os.popen('mkdir ' + logs_dir + '/valid_d')
+    os.popen('mkdir ' + logs_dir + '/valid_g')
     os.popen('mkdir ' + logs_dir + '/images')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
@@ -75,30 +78,43 @@ class GAN:
         self.Generator = GM.Generator(batch_size, is_training, IMAGE_SIZE, IMAGE_RESIZE, self.keep_probability)
         self.Discriminator = GM.Discriminator(is_training)
 
-        self.D1 = tf.placeholder(tf.float32, shape=[2], name="D1")
-        self.D2 = tf.placeholder(tf.float32, shape=[2], name="D2")
-
         with tf.variable_scope('G'):
-            G, _ = self.Generator.generate(self.image, is_training, self.keep_probability, FLAGS.debug)
-            I = self.image[:, :, :, FLAGS.window_size]
-            self.rgb_predict = tf.concat([I, G, I], axis=3)
+            self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability)
 
         with tf.variable_scope('D') as scope2:
-            D1, _ = self.Discriminator.discriminate(self.ground_truth, is_training, self.keep_probability, FLAGS.debug)
+            self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
             scope2.reuse_variables()
-            D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability, FLAGS.debug)
+            self.D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability)
 
-        self.loss = tf.reduce_mean(-tf.log(self.D1) - tf.log(1 - self.D2))
+        # basic loss
+        #self.loss = tf.reduce_mean(-tf.log(self.D1) - tf.log(1 - self.D2))
+
+        # Goodfellow Loss at NIPS 2016 tutorial
+        #self.loss = tf.nn.sigmoid_cross_entropy_with_logits(self.D1, .9) + tf.nn.sigmoid_cross_entropy_with_logits(self.D2, 0.)
+
+        # BEGAN loss
+        """
+        This model is to generate realistic data.
+        As original data to be multiplied is high-quality so we need to modify this.
+        by loss_g, Generator is trained to generate high-resolution image.
+            Actually it's enough. We don't need to construct GAN when using this loss.
+        by loss_d, Discriminator trains to figure out whether given image is real or not.
+            With this process, We hope the generator to draw better image.
+        """
+        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) - self.loss_g
+        self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
 
         trainable_var = tf.trainable_variables()
 
-        self.train_op = self.train(trainable_var)
+        self.train_op_d, self.train_op_g = self.train(trainable_var)
 
     def train(self, var_list):
         optimizer = tf.train.AdamOptimizer(learning_rate)
-        grads = optimizer.compute_gradients(self.loss, var_list=var_list)
+        grads_d = optimizer.compute_gradients(self.loss_d, var_list=var_list)
+        grads_g = optimizer.compute_gradients(self.loss_g, var_list=var_list)
 
-        return optimizer.apply_gradients(grads)
+        return optimizer.apply_gradients(grads_d), optimizer.apply_gradients(grads_g)
+
 
 def train(is_training=True):
     ###############################  GRAPH PART  ###############################
@@ -114,12 +130,16 @@ def train(is_training=True):
 
     ##############################  Summary Part  ##############################
     print("Setting up summary op...")
-    loss_ph = tf.placeholder(dtype=tf.float32)
-    loss_summary_op = tf.summary.scalar("LOSS", loss_ph)
+    loss_d_ph = tf.placeholder(dtype=tf.float32)
+    loss_d_summary_op = tf.summary.scalar("LOSS_d", loss_d_ph)
+    loss_g_ph = tf.placeholder(dtype=tf.float32)
+    loss_g_summary_op = tf.summary.scalar("LOSS_g", loss_g_ph)
     psnr_ph = tf.placeholder(dtype=tf.float32)
     psnr_summary_op = tf.summary.scalar("PSNR", psnr_ph)
-    generator_summary_writer = tf.summary.FileWriter(logs_dir + '/generator/', max_queue=2)
-    discriminator_summary_writer = tf.summary.FileWriter(logs_dir + '/discriminator/', max_queue=2)
+    train_summary_writer_d = tf.summary.FileWriter(logs_dir + '/train/', max_queue=2)
+    valid_summary_writer_d = tf.summary.FileWriter(logs_dir + '/valid/', max_queue=2)
+    train_summary_writer_g = tf.summary.FileWriter(logs_dir + '/train/', max_queue=2)
+    valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/', max_queue=2)
     print("Done")
 
     ############################  Model Save Part  #############################
@@ -131,16 +151,9 @@ def train(is_training=True):
     ################################  Session Part  ################################
     print("Session Initialization...")
 
-    if FLAGS.mode == 'train':
-        train_dataset_reader = dr.Dataset(path=training_data_dir,
-            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
-            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
-
-
-    for el in vd_folders:
-        validation_dataset_reader = dr.Dataset(path=validation_data_dir,
-            input_shape=(IMAGE_SIZE*GT_RESIZE, IMAGE_SIZE*GT_RESIZE),
-            gt_shape=(IMAGE_SIZE*GT_RESIZE, IMAGE_SIZE*GT_RESIZE))
+    validation_dataset_reader = dr.Dataset(path=validation_data_dir,
+                                           input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
+                                           gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
     val_size = validation_dataset_reader.size
     assert val_size % FLAGS.val_batch_size is 0, "The validation data set size %d must be divided by" \
@@ -161,16 +174,15 @@ def train(is_training=True):
 
      #############################     Train      ###############################
     if FLAGS.mode == "train":
-
-        prev_train_loss = 0
-        prev_val_loss = 0
-
+        train_dataset_reader = dr.Dataset(path=training_data_dir,
+                                          input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
+                                          gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
         for itr in range(MAX_ITERATION):
             train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
-            sess.run([m_train.train_op], feed_dict=train_dict)
+            sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
                 valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
@@ -178,14 +190,23 @@ def train(is_training=True):
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
 
-                train_loss, train_pred = sess.run([m_train.loss, m_train.rgb_predict], feed_dict=train_dict)
-                valid_loss, valid_pred = sess.run([m_valid.loss, m_valid.rgb_predict], feed_dict=valid_dict)
-                train_summary_str = sess.run(loss_summary_op, feed_dict={loss_ph: train_loss})
-                valid_summary_str = sess.run(loss_summary_op, feed_dict={loss_ph: valid_loss})
-                print("%s ---> Validation_loss: %g" % (datetime.datetime.now(), valid_loss))
-                print("Step: %d, Train_loss:%g" % (itr, train_loss))
-                train_summary_writer.add_summary(train_summary_str, itr)
-                valid_summary_writer.add_summary(valid_summary_str, itr)
+                train_loss_d, train_loss_g, train_pred = sess.run([m_train.loss_d, m_train.loss_g, m_train.rgb_predict],
+                                                                  feed_dict=train_dict)
+                valid_loss_d, valid_loss_g, valid_pred = sess.run([m_valid.loss_d, m_valid.loss_g, m_valid.rgb_predict],
+                                                                  feed_dict=valid_dict)
+
+                train_summary_str_d, train_summary_str_g = sess.run([loss_d_summary_op, loss_g_summary_op],
+                                             feed_dict={loss_d_ph: train_loss_d, loss_g_ph: train_loss_g})
+                valid_summary_str_d, valid_summary_str_g = sess.run([loss_d_summary_op, loss_g_summary_op],
+                                             feed_dict={loss_d_ph: valid_loss_d, loss_g_ph: valid_loss_g})
+                print("%s ---> Validation_loss_discriminator: %g" % (datetime.datetime.now(), valid_loss_d))
+                print("%s ---> Validation_loss_generator: %g" % (datetime.datetime.now(), valid_loss_g))
+                print("Step: %d, Train_loss_discriminator:%g" % (itr, train_loss_d))
+                print("Step: %d, Train_loss_generator:%g" % (itr, train_loss_g))
+                train_summary_writer_d.add_summary(train_summary_str_d, itr)
+                train_summary_writer_g.add_summary(train_summary_str_g, itr)
+                valid_summary_writer_d.add_summary(valid_summary_str_d, itr)
+                valid_summary_writer_g.add_summary(valid_summary_str_g, itr)
 
                 """
                 Implement PSNR calculation and save here

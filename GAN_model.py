@@ -13,7 +13,7 @@ import Utils as utils
 decay=0.9
 stddev=0.02
 
-
+"""
 def DCNN(color):
     image = tf.placeholder(tf.float32, [None, FLAGS.YDIM, FLAGS.XDIM])
 
@@ -62,6 +62,7 @@ def DCNN(color):
         net[kind+index] = current
 
     return image, current
+"""
 
 
 class Generator:
@@ -73,9 +74,6 @@ class Generator:
         pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob)
         trainable_var = tf.trainable_variables()
 
-        if debug:
-            for var in trainable_var:
-                utils.add_to_regularization_and_summary(var)
         return pred_annotation, logits
 
 
