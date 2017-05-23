@@ -17,6 +17,8 @@ import os
 import Evaluator as ev
 import GAN_model as GM
 import utils
+import matplotlib.pyplot as plt
+
 
 __author__ = 'BHBAN'
 
@@ -238,8 +240,8 @@ def train(is_training=True):
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                  visual_high_resolution_image)
-                print('validation images were saved!')
+                                  visual_high_resolution_image, show_image_num=None)
+                print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
     elif FLAGS.mode == "visualize":
@@ -250,12 +252,13 @@ def train(is_training=True):
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                          visual_high_resolution_image)
-        """
-        implement here result plotting.
-        use plt.show() 
-        """
+        visual_plt = utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                       visual_high_resolution_image, show_image_num=None)
+        print('Validation images were saved!')
+
+        if visual_plt is not None:
+            visual_plt.show()
+            print('Plot result images')
 
 
 def main():
