@@ -3,8 +3,8 @@ import scipy.misc
 import os
 from PIL import Image
 import numpy as np
-import scipy as sp
-import skimage
+#import scipy as sp
+#import skimage
 import random
 
 
@@ -87,13 +87,3 @@ class Dataset:
     cur_idx = 0
     max_idx = 0
     files = []
-
-
-def main():
-    a = Dataset("images/", (512, 512), (1024, 1024))
-    b, c = a.next_batch(2)
-    print(b.shape)
-    print(c.shape)
-
-
-main()
