@@ -125,11 +125,11 @@ def train(is_training=True):
     print("Graph Initialization...")
     with tf.device(FLAGS.device):
         with tf.variable_scope("model", reuse=None):
-            m_train = GM.GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
+            m_train = GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
         with tf.variable_scope("model", reuse=True):
-            m_valid = GM.GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
+            m_valid = GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
         with tf.variable_scope("model", reuse=True):
-            m_visual = GM.GAN(FLAGS.vis_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
+            m_visual = GAN(FLAGS.vis_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
     print("Done")
 
     ##############################  Summary Part  ##############################
@@ -147,10 +147,6 @@ def train(is_training=True):
     valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/loss_g', max_queue=2)
     train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr')
     valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr')
-
-    generator_summary_writer = tf.summary.FileWriter(logs_dir + '/generator/', max_queue=2)
-    discriminator_summary_writer = tf.summary.FileWriter(logs_dir + '/discriminator/', max_queue=2)
-
     print("Done")
 
     ############################  Model Save Part  #############################
