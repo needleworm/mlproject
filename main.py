@@ -184,14 +184,15 @@ def train(is_training=True):
                                           input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
                                           gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
         for itr in range(MAX_ITERATION):
-            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
+            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size, 64)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
-                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
+                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(
+                    FLAGS.val_batch_size, 64)
                 valid_dict = {m_valid.low_resolution_image: valid_low_resolution_image,
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
@@ -235,7 +236,7 @@ def train(is_training=True):
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                  visual_high_resolution_image, show_image_num=None)
+                                  visual_high_resolution_image, show_image=False)
                 print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
@@ -247,13 +248,9 @@ def train(is_training=True):
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        visual_plt = utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                       visual_high_resolution_image, show_image_num=None)
+        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                       visual_high_resolution_image, show_image_num=False)
         print('Validation images were saved!')
-
-        if visual_plt is not None:
-            visual_plt.show()
-            print('Plot result images')
 
 
 def main():

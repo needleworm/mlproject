@@ -50,7 +50,11 @@ def deconv(x, W, b, output_shape, stride=1):
     return tf.nn.bias_add(conv, b)
 
 
-def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image_num=None):
+def change_format(image):
+    return ((image * 255) / np.max(image)).astype('uint8')
+
+
+def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False):
 
     label = 'PSNR: {:.2f}'
 
@@ -65,13 +69,13 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
         visual_predict_psnr = ev.psnr(1, ground_truth[i], output_image[i])
-        ax[0].imshow(input_image[i])
+        ax[0].imshow(change_format(input_image[i]))
         ax[0].set_xlabel(label.format(visual_psnr))
         ax[0].set_title('Input Image')
-        ax[1].imshow(output_image[i])
+        ax[1].imshow(change_format(output_image[i]))
         ax[1].set_xlabel(label.format(visual_predict_psnr))
         ax[1].set_title('Output Image')
-        ax[2].imshow(ground_truth[i])
+        ax[2].imshow(change_format(ground_truth[i]))
         ax[2].set_title('Ground Truth')
 
         for ax in axes:
@@ -81,13 +85,6 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         fig.savefig(directory + "/Results/%d__%s.jpg" % (i, time))
 
-        if i >= batch_size:
-            print("Error : image number is too large!")
-            return None
-        else:
-            if i == show_image_num:
-                visual_plt = plt
-            else :
-                visual_plt = None
+        if show_image is True:
+            plt.show()
 
-    return visual_plt
