@@ -12,6 +12,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import Datareader as dr
+import Datareader2 as dr2
 import sys
 import os
 import Evaluator as ev
@@ -31,12 +32,12 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string("device", "/cpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
-tf.flags.DEFINE_integer("tr_batch_size", "5", "batch size for training. [default : 5]")
-tf.flags.DEFINE_integer("vis_batch_size", "5", "batch size for visualization. [default : 5]")
-tf.flags.DEFINE_integer("val_batch_size", "5", "batch size for validation. [default : 5]")
+tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
+tf.flags.DEFINE_integer("vis_batch_size", "1", "batch size for visualization. [default : 5]")
+tf.flags.DEFINE_integer("val_batch_size", "1", "batch size for validation. [default : 5]")
 
 if FLAGS.mode is 'visualize':
     FLAGS.reset = False
@@ -128,8 +129,6 @@ def train(is_training=True):
             m_train = GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
         with tf.variable_scope("model", reuse=True):
             m_valid = GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
-        with tf.variable_scope("model", reuse=True):
-            m_visual = GAN(FLAGS.vis_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
     print("Done")
 
     ##############################  Summary Part  ##############################
@@ -159,7 +158,7 @@ def train(is_training=True):
     ################################  Session Part  ################################
     print("Session Initialization...")
 
-    validation_dataset_reader = dr.Dataset(path=validation_data_dir,
+    validation_dataset_reader = dr2.Dataset(path=validation_data_dir,
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
                                            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
