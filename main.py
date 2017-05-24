@@ -31,12 +31,12 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/cpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
-tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
-tf.flags.DEFINE_integer("vis_batch_size", "1", "batch size for visualization. [default : 5]")
-tf.flags.DEFINE_integer("val_batch_size", "1", "batch size for validation. [default : 5]")
+tf.flags.DEFINE_integer("tr_batch_size", "5", "batch size for training. [default : 5]")
+tf.flags.DEFINE_integer("vis_batch_size", "5", "batch size for visualization. [default : 5]")
+tf.flags.DEFINE_integer("val_batch_size", "5", "batch size for validation. [default : 5]")
 
 if FLAGS.mode is 'visualize':
     FLAGS.reset = False
@@ -46,7 +46,7 @@ if FLAGS.reset:
     if 'win32' in sys.platform:
         os.popen('rmdir /s /q ' + logs_dir)
     else:
-        os.popen('rm -rf ' + logs_dir + '/*')
+        os.popen('rm -rf ' + logs_dir)
 
     os.popen('mkdir ' + logs_dir)
     os.popen('mkdir ' + logs_dir + '/train')
@@ -106,7 +106,6 @@ class GAN:
         """
         self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
         self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) + self.loss_g
-
         trainable_var = tf.trainable_variables()
 
         self.train_op_d, self.train_op_g = self.train(trainable_var)
@@ -114,10 +113,11 @@ class GAN:
     def train(self, var_list):
         optimizer1 = tf.train.AdamOptimizer(learning_rate)
         optimizer2 = tf.train.AdamOptimizer(learning_rate)
-        grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
         grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
+        grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
 
         return optimizer1.apply_gradients(grads_d), optimizer2.apply_gradients(grads_g)
+
 
 
 def train(is_training=True):
@@ -147,6 +147,7 @@ def train(is_training=True):
     valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/loss_g', max_queue=2)
     train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr')
     valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr')
+
     print("Done")
 
     ############################  Model Save Part  #############################
@@ -156,15 +157,13 @@ def train(is_training=True):
     print("Done")
 
     ################################  Session Part  ################################
-    print("Datareader Activation.....")
+    print("Session Initialization...")
 
     validation_dataset_reader = dr.Dataset(path=validation_data_dir,
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
                                            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
     val_size = validation_dataset_reader.max_idx
-    assert val_size % FLAGS.val_batch_size is 0, "The validation data set size %d must be divided by" \
-                                                 " the validation batch size." % val_size
     print("Done")
 
     print("Session Initialization...")
@@ -185,14 +184,14 @@ def train(is_training=True):
                                           input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
                                           gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
         for itr in range(MAX_ITERATION):
-            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
+            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size, 32)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
-                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
+                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size, 32)
                 valid_dict = {m_valid.low_resolution_image: valid_low_resolution_image,
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
@@ -230,31 +229,27 @@ def train(is_training=True):
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
 
             if itr % 500 == 0:
-                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
+                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
                 visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                  visual_high_resolution_image, show_image_num=None)
+                                  visual_high_resolution_image, show_image=False)
                 print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
     elif FLAGS.mode == "visualize":
 
-        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
+        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
         visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                        m_valid.high_resolution_image: visual_high_resolution_image,
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        visual_plt = utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                       visual_high_resolution_image, show_image_num=None)
+        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                       visual_high_resolution_image, show_image=False)
         print('Validation images were saved!')
-
-        if visual_plt is not None:
-            visual_plt.show()
-            print('Plot result images')
 
 
 def main():
