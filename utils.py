@@ -83,7 +83,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
             ax.set_yticks([])
         plt.tight_layout()
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
-        fig.savefig(directory + "/Results/%d__%s.jpg" % (i, time))
+        fig.savefig(directory + "/Results/%s__%d.jpg" % (time, i))
 
         if show_image is True:
             plt.show()
