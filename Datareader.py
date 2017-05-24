@@ -86,10 +86,11 @@ class Dataset:
 
     input_shape=None
     gt_shape=None
+    path=None
     cur_idx=0
     max_idx=0
     files=[] 
-
+    
 '''
 def main():
     a=Dataset("images/",(512,512),(1024,1024))
