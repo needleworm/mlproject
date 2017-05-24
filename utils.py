@@ -51,9 +51,7 @@ def deconv(x, W, b, output_shape, stride=1):
 
 
 def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image_num=None):
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
-                             subplot_kw={'adjustable': 'box-forced'})
-    ax = axes.ravel()
+
     label = 'PSNR: {:.2f}'
 
     if batch_size == 1:
@@ -62,7 +60,9 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         ground_truth = np.array([ground_truth])
 
     for i in range(batch_size):
-
+        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
+                                 subplot_kw={'adjustable': 'box-forced'})
+        ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
         visual_predict_psnr = ev.psnr(1, ground_truth[i], output_image[i])
         ax[0].imshow(input_image[i])
