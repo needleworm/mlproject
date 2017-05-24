@@ -31,7 +31,7 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string("device", "/cpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
 tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
@@ -156,7 +156,7 @@ def train(is_training=True):
     print("Done")
 
     ################################  Session Part  ################################
-    print("Session Initialization...")
+    print("Datareader Activation.....")
 
     validation_dataset_reader = dr.Dataset(path=validation_data_dir,
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
