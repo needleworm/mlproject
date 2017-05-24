@@ -114,11 +114,8 @@ class GAN:
     def train(self, var_list):
         optimizer1 = tf.train.AdamOptimizer(learning_rate)
         optimizer2 = tf.train.AdamOptimizer(learning_rate)
-        print(0)
         grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
-        print(1)
         grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
-        print(2)
 
         return optimizer1.apply_gradients(grads_d), optimizer2.apply_gradients(grads_g)
 
