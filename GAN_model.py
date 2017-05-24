@@ -9,7 +9,8 @@
 __author__ = 'BHBAN, JTKIM'
 
 import tensorflow as tf
-import Utils as utils
+import utils as utils
+
 decay=0.9
 stddev=0.02
 
@@ -72,7 +73,6 @@ class Generator:
 
     def generate(self, image, is_training, keep_prob):
         pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob)
-        trainable_var = tf.trainable_variables()
 
         return pred_annotation, logits
 
@@ -189,7 +189,7 @@ class Generator_Graph:
             # Deconv 1
             stride = 2
             deconv_shape_1 = encoder[4].get_shape()
-            self.DCNN1_shape  = [4, 4, deconv_shape_1[3].value, 3]
+            self.DCNN1_shape  = [4, 4, deconv_shape_1[3].value, D8.get_shape().as_list()[3]]
             self.DCNN1_kernel = tf.get_variable("D_DCNN_1_W", initializer=tf.truncated_normal(self.DCNN1_shape, stddev=stddev))
             self.DCNN1_bias   = tf.get_variable("D_DCNN_1_B", initializer=tf.constant(0.0, shape=[self.DCNN1_shape[-2]]))
 
@@ -201,7 +201,7 @@ class Generator_Graph:
             deconv_shape_2 = encoder[3].get_shape()
             self.DCNN2_shape  = [4, 4, deconv_shape_2[3].value, deconv_shape_1[3].value]
             self.DCNN2_kernel = tf.get_variable("D_DCNN_2_W", initializer=tf.truncated_normal(self.DCNN2_shape, stddev=stddev))
-            self.DCNN2_bias   = tf.get_variable("D_DCNN_2_B", initializer=tf.constant(0.0, shape=[self.DCNN2_shape[-1]]))
+            self.DCNN2_bias   = tf.get_variable("D_DCNN_2_B", initializer=tf.constant(0.0, shape=[self.DCNN2_shape[-2]]))
 
             DC2 = tf.nn.conv2d_transpose(F1, self.DCNN2_kernel, deconv_shape_2.as_list(), strides=[1, stride, stride, 1], padding="SAME")
             DC2 = tf.nn.bias_add(DC2, self.DCNN2_bias)
@@ -209,12 +209,13 @@ class Generator_Graph:
 
             # Deconv 3
             shape = encoder[0].get_shape().as_list()
-            deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), NUM_OF_CLASSES)
+            deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), 3)
+            scale_factor = int(deconv_shape_3[1] / F2.get_shape().as_list()[1])
             self.DCNN3_shape  = [16, 16, 3, deconv_shape_2[3].value]
             self.DCNN3_kernel = tf.get_variable("D_DCNN_3_W", initializer=tf.truncated_normal(self.DCNN3_shape, stddev=stddev))
-            self.DCNN3_bias   = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[self.DCNN3_shape[-2]]))
+            self.DCNN3_bias   = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[3]))
 
-            DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, stride, stride, 1], padding="SAME")
+            DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, scale_factor, scale_factor, 1], padding="SAME")
             DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias)
 
             output = tf.sigmoid(DC3) * 255
@@ -233,7 +234,7 @@ class Discriminator:
 
     def discriminate(self, image, is_training, keep_prob):
         disc, logits = self.Discriminator_Graph.discriminator(image, is_training, keep_prob)
-        trainable_var = tf.trainable_variables()
+        #trainable_var = tf.trainable_variables()
         return disc, logits
 
 
@@ -448,7 +449,6 @@ class Discriminator_Graph:
         F20 = tf.nn.bias_add(F20, self.FNN20_bias)
 
         out = tf.nn.softmax(F20)
-        print(out.get_shape)
 
         net.append(out)
 
