@@ -165,7 +165,7 @@ def train(is_training=True):
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
                                            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
-    val_size = validation_dataset_reader.size
+    val_size = validation_dataset_reader.max_idx
     assert val_size % FLAGS.val_batch_size is 0, "The validation data set size %d must be divided by" \
                                                  " the validation batch size." % val_size
     print("Done")
