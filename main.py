@@ -189,14 +189,14 @@ def train(is_training=True):
                                           input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
                                           gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
         for itr in range(MAX_ITERATION):
-            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
+            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size, 32)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
-                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
+                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size, 32)
                 valid_dict = {m_valid.low_resolution_image: valid_low_resolution_image,
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
