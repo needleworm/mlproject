@@ -17,7 +17,7 @@ class Dataset:
             print("path is wrong!")
         else:
             for file in os.listdir(path):
-                if file.endswith('.jpeg'):
+                if file.endswith('.jpeg') or file.endswith('.jpg'):
                     self.files.append(file)
                     self.max_idx += 1
 
