@@ -234,31 +234,27 @@ def train(is_training=True):
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
 
             if itr % 500 == 0:
-                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
+                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
                 visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                  visual_high_resolution_image, show_image_num=None)
+                                  visual_high_resolution_image, show_image=False)
                 print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
     elif FLAGS.mode == "visualize":
 
-        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
+        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
         visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                        m_valid.high_resolution_image: visual_high_resolution_image,
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        visual_plt = utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                       visual_high_resolution_image, show_image_num=None)
+        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                       visual_high_resolution_image, show_image=False)
         print('Validation images were saved!')
-
-        if visual_plt is not None:
-            visual_plt.show()
-            print('Plot result images')
 
 
 def main():
