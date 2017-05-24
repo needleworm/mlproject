@@ -24,8 +24,8 @@ __author__ = 'BHBAN'
 
 
 logs_dir = "logs"
-training_data_dir = "images/train"
-validation_data_dir = "images/validation"
+training_data_dir = "images/train/"
+validation_data_dir = "images/validation/"
 
 np.set_printoptions(suppress=True)
 
@@ -34,9 +34,9 @@ tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluati
 tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
-tf.flags.DEFINE_integer("tr_batch_size", "5", "batch size for training. [default : 5]")
-tf.flags.DEFINE_integer("vis_batch_size", "5", "batch size for visualization. [default : 5]")
-tf.flags.DEFINE_integer("val_batch_size", "5", "batch size for validation. [default : 5]")
+tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
+tf.flags.DEFINE_integer("vis_batch_size", "1", "batch size for visualization. [default : 5]")
+tf.flags.DEFINE_integer("val_batch_size", "1", "batch size for validation. [default : 5]")
 
 if FLAGS.mode is 'visualize':
     FLAGS.reset = False
@@ -112,11 +112,15 @@ class GAN:
         self.train_op_d, self.train_op_g = self.train(trainable_var)
 
     def train(self, var_list):
-        optimizer = tf.train.AdamOptimizer(learning_rate)
-        grads_d = optimizer.compute_gradients(self.loss_d, var_list=var_list)
-        grads_g = optimizer.compute_gradients(self.loss_g, var_list=var_list)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate)
+        print(0)
+        grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
+        print(1)
+        grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
+        print(2)
 
-        return optimizer.apply_gradients(grads_d), optimizer.apply_gradients(grads_g)
+        return optimizer1.apply_gradients(grads_d), optimizer2.apply_gradients(grads_g)
 
 
 def train(is_training=True):
@@ -184,15 +188,14 @@ def train(is_training=True):
                                           input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
                                           gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
         for itr in range(MAX_ITERATION):
-            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size, 64)
+            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
-                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(
-                    FLAGS.val_batch_size, 64)
+                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
                 valid_dict = {m_valid.low_resolution_image: valid_low_resolution_image,
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
@@ -236,7 +239,7 @@ def train(is_training=True):
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                  visual_high_resolution_image, show_image=False)
+                                  visual_high_resolution_image, show_image_num=None)
                 print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
@@ -248,9 +251,13 @@ def train(is_training=True):
                        m_valid.keep_probability: 1.0}
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
-        utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                       visual_high_resolution_image, show_image_num=False)
+        visual_plt = utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                                       visual_high_resolution_image, show_image_num=None)
         print('Validation images were saved!')
+
+        if visual_plt is not None:
+            visual_plt.show()
+            print('Plot result images')
 
 
 def main():
