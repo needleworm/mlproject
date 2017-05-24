@@ -79,7 +79,7 @@ class Dataset:
     def random_batch(self,batch_size, option):
         in_image=[]
         gt_image=[]
-        cur_idx = random.random(0,self.max_idx)
+        cur_idx = int(random.random() * self.max_idx)
         for i in range(batch_size):
             path =self.path+self.files[cur_idx]
             i_image,g_image=self.get_batch_inputs(path,cur_idx, option)
