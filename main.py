@@ -105,7 +105,7 @@ class GAN:
             With this process, We hope the generator to draw better image.
         """
         self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
-        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) - self.loss_g
+        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) + self.loss_g
 
         trainable_var = tf.trainable_variables()
 
