@@ -206,8 +206,6 @@ class Generator_Graph:
             DC2 = tf.nn.conv2d_transpose(F1, self.DCNN2_kernel, deconv_shape_2.as_list(), strides=[1, stride, stride, 1], padding="SAME")
             DC2 = tf.nn.bias_add(DC2, self.DCNN2_bias)
             F2 = tf.add(DC2, encoder[3], name="fuse_2")
-            print(2222222)
-            print(F2.shape)
 
             # Deconv 3
             shape = encoder[0].get_shape().as_list()
@@ -358,8 +356,6 @@ class Discriminator_Graph:
         C4 = tf.nn.bias_add(C4, self.CNN4_bias)
         C4 = tf.contrib.layers.batch_norm(C4, decay=decay, is_training=is_training, updates_collections=None)
         R4 = tf.nn.relu(C4, name="DISC_Relu_4")
-        print(43444343434343)
-        print(R4.shape)
 
         P2 = tf.nn.max_pool(R4, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
         net.append(P2)
