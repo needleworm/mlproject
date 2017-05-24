@@ -49,10 +49,12 @@ def deconv(x, W, b, output_shape, stride=1):
     conv = tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, stride, stride, 1], padding="SAME")
     return tf.nn.bias_add(conv, b)
 
+
 def change_format(image):
     return ((image * 255) / np.max(image)).astype('uint8')
 
-def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image_num=None):
+
+def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False):
 
     label = 'PSNR: {:.2f}'
 
@@ -83,13 +85,6 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         fig.savefig(directory + "/Results/%d__%s.jpg" % (i, time))
 
-        if i >= batch_size:
-            print("Error : image number is too large!")
-            return None
-        else:
-            if i == show_image_num:
-                visual_plt = plt
-            else :
-                visual_plt = None
+        if show_image is True:
+            plt.show()
 
-    return visual_plt
