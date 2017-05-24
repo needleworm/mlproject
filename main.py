@@ -24,8 +24,8 @@ __author__ = 'BHBAN'
 
 
 logs_dir = "logs"
-training_data_dir = "images/train"
-validation_data_dir = "images/validation"
+training_data_dir = "images/train/"
+validation_data_dir = "images/validation/"
 
 np.set_printoptions(suppress=True)
 
@@ -46,7 +46,7 @@ if FLAGS.reset:
     if 'win32' in sys.platform:
         os.popen('rmdir /s /q ' + logs_dir)
     else:
-        os.popen('rm -rf ' + logs_dir + '/*')
+        os.popen('rm -rf ' + logs_dir)
 
     os.popen('mkdir ' + logs_dir)
     os.popen('mkdir ' + logs_dir + '/train')
@@ -104,19 +104,19 @@ class GAN:
         by loss_d, Discriminator trains to figure out whether given image is real or not.
             With this process, We hope the generator to draw better image.
         """
-        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) - self.loss_g
         self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
-
+        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) + self.loss_g
         trainable_var = tf.trainable_variables()
 
         self.train_op_d, self.train_op_g = self.train(trainable_var)
 
     def train(self, var_list):
-        optimizer = tf.train.AdamOptimizer(learning_rate)
-        grads_d = optimizer.compute_gradients(self.loss_d, var_list=var_list)
-        grads_g = optimizer.compute_gradients(self.loss_g, var_list=var_list)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate)
+        grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
+        grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
 
-        return optimizer.apply_gradients(grads_d), optimizer.apply_gradients(grads_g)
+        return optimizer1.apply_gradients(grads_d), optimizer2.apply_gradients(grads_g)
 
 
 
@@ -125,11 +125,11 @@ def train(is_training=True):
     print("Graph Initialization...")
     with tf.device(FLAGS.device):
         with tf.variable_scope("model", reuse=None):
-            m_train = GM.GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
+            m_train = GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
         with tf.variable_scope("model", reuse=True):
-            m_valid = GM.GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
+            m_valid = GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
         with tf.variable_scope("model", reuse=True):
-            m_visual = GM.GAN(FLAGS.vis_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
+            m_visual = GAN(FLAGS.vis_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
     print("Done")
 
     ##############################  Summary Part  ##############################
@@ -148,9 +148,6 @@ def train(is_training=True):
     train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr')
     valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr')
 
-    generator_summary_writer = tf.summary.FileWriter(logs_dir + '/generator/', max_queue=2)
-    discriminator_summary_writer = tf.summary.FileWriter(logs_dir + '/discriminator/', max_queue=2)
-
     print("Done")
 
     ############################  Model Save Part  #############################
@@ -166,9 +163,7 @@ def train(is_training=True):
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
                                            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
-    val_size = validation_dataset_reader.size
-    assert val_size % FLAGS.val_batch_size is 0, "The validation data set size %d must be divided by" \
-                                                 " the validation batch size." % val_size
+    val_size = validation_dataset_reader.max_idx
     print("Done")
 
     print("Session Initialization...")
@@ -258,4 +253,7 @@ def train(is_training=True):
 
 
 def main():
+    train(True)
     pass
+
+main()
