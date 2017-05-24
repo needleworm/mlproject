@@ -114,11 +114,8 @@ class GAN:
     def train(self, var_list):
         optimizer1 = tf.train.AdamOptimizer(learning_rate)
         optimizer2 = tf.train.AdamOptimizer(learning_rate)
-        print(0)
         grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
-        print(1)
         grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
-        print(2)
 
         return optimizer1.apply_gradients(grads_d), optimizer2.apply_gradients(grads_g)
 
@@ -165,7 +162,7 @@ def train(is_training=True):
                                            input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
                                            gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
 
-    val_size = validation_dataset_reader.size
+    val_size = validation_dataset_reader.max_idx
     assert val_size % FLAGS.val_batch_size is 0, "The validation data set size %d must be divided by" \
                                                  " the validation batch size." % val_size
     print("Done")
