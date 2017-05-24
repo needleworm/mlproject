@@ -6,6 +6,7 @@ import numpy as np
 
 def psnr(batch_size, ref_image_set, output_image_set):
     psnr_val = 0
+
     ref_image_set = np.array(ref_image_set)
     output_image_set = np.array(output_image_set)
 
@@ -23,12 +24,13 @@ def psnr(batch_size, ref_image_set, output_image_set):
 
 def ssim(batch_size, ref_image_set, output_image_set):
     ssim_val = 0
+
     ref_image_set = np.array(ref_image_set)
     output_image_set = np.array(output_image_set)
 
     if batch_size == 1:
-        return compare_ssim(ref_image_set, output_image_set, data_range=ref_image_set.max() - ref_image_set.min(),
-                            multichannel=True)
+        return compare_ssim(ref_image_set, output_image_set,
+                            data_range=ref_image_set.max() - ref_image_set.min(), multichannel=True)
 
     for i in range(batch_size):
         ref_image = ref_image_set[i]
