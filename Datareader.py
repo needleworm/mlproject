@@ -39,7 +39,6 @@ class Dataset:
        return ((image*255)/np.max(image)).astype('uint8')
 
     def get_batch_inputs(self, path, idx, option):
-        path = self.path+self.files[idx]
         i_image = self.read_image(path,self.input_shape, option)
         if option==64:
             poissonNoise = np.random.poisson(50, i_image.shape).astype(float) # noise model
