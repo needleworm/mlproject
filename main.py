@@ -47,6 +47,7 @@ if FLAGS.reset:
     if 'win32' in sys.platform:
         os.popen('rmdir /s /q ' + logs_dir)
     else:
+        os.popen('rm -rf ' + logs_dir + "/*")
         os.popen('rm -rf ' + logs_dir)
 
     os.popen('mkdir ' + logs_dir)
@@ -233,7 +234,7 @@ def train(is_training=True):
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
-                utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
+                utils.save_images(FLAGS.val_batch_size, logs_dir + '/images', visual_low_resolution_image, predict,
                                   visual_high_resolution_image, show_image=False)
                 print('Validation images were saved!')
 

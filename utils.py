@@ -69,6 +69,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
         visual_predict_psnr = ev.psnr(1, ground_truth[i], output_image[i])
+        """
         ax[0].imshow(change_format(input_image[i]))
         ax[0].set_xlabel(label.format(visual_psnr))
         ax[0].set_title('Input Image')
@@ -82,8 +83,10 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
             ax.set_xticks([])
             ax.set_yticks([])
         plt.tight_layout()
+        """
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
-        fig.savefig(directory + "/Results/%s__%d.jpg" % (time, i))
+        
+        fig.savefig(directory + "/%s__%d.jpg" % (time, i))
 
         if show_image is True:
             plt.show()
