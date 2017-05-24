@@ -9,7 +9,8 @@
 __author__ = 'BHBAN, JTKIM'
 
 import tensorflow as tf
-import Utils as utils
+import utils as utils
+
 decay=0.9
 stddev=0.02
 
@@ -209,13 +210,15 @@ class Generator_Graph:
 
             # Deconv 3
             shape = encoder[0].get_shape().as_list()
-            deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), NUM_OF_CLASSES)
+            deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), 3)
             self.DCNN3_shape  = [16, 16, 3, deconv_shape_2[3].value]
             self.DCNN3_kernel = tf.get_variable("D_DCNN_3_W", initializer=tf.truncated_normal(self.DCNN3_shape, stddev=stddev))
             self.DCNN3_bias   = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[self.DCNN3_shape[-2]]))
 
             DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, stride, stride, 1], padding="SAME")
             DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias)
+
+            print(DC3.shape)
 
             output = tf.sigmoid(DC3) * 255
         return output, DC3
@@ -233,7 +236,7 @@ class Discriminator:
 
     def discriminate(self, image, is_training, keep_prob):
         disc, logits = self.Discriminator_Graph.discriminator(image, is_training, keep_prob)
-        trainable_var = tf.trainable_variables()
+        #trainable_var = tf.trainable_variables()
         return disc, logits
 
 

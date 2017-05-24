@@ -3,15 +3,16 @@ import scipy.misc
 import os
 from PIL import Image
 import numpy as np
-import scipy as sp
-import skimage 
+#import scipy as sp
+#import skimage
 import random
 
 
 class Dataset:
-    def __init__(self, path, input_shape=(1024,1024), gt_shape=(1024,1024)):
-        self.input_shape=input_shape
-        self.gt_shape=gt_shape
+    def __init__(self, path, input_shape=(1024, 1024), gt_shape=(1024, 1024)):
+
+        self.input_shape = input_shape
+        self.gt_shape = gt_shape
         self.path = path
         if not os.path.exists(path):
             print("path is wrong!")
@@ -22,6 +23,7 @@ class Dataset:
                     self.max_idx += 1
 
     def read_image(self, path, size, option):   # this function reads image as float64
+        ret = None  
         if option==64:
             image =(scipy.misc.imread(path)).astype(float)
             ret=scipy.misc.imresize(image,size).astype(float)
@@ -30,7 +32,7 @@ class Dataset:
             ret=scipy.misc.imresize(image,size).astype('float32')
         elif option==8:
             image = Image.open(path)
-            ret = np.asarray( image.resize(size,Image.ANTIALIAS))
+            ret = np.asarray(image.resize(size, Image.ANTIALIAS))
         return ret
 
     def change_format(self,image):
@@ -63,7 +65,7 @@ class Dataset:
    #        ret.show()
             in_image.append(i_image)
             gt_image.append(g_image)
-            cur_idx = (cur_idx+1)%self.max_idx
+            cur_idx = (cur_idx + 1) % self.max_idx
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
         self.cur_idx=cur_idx # update for next batching
@@ -78,7 +80,7 @@ class Dataset:
             i_image,g_image=self.get_batch_inputs(path,cur_idx, option)
             in_image.append(i_image)
             gt_image.append(g_image)
-            cur_idx = (cur_idx+1)%self.max_idx
+            cur_idx = (cur_idx + 1) % self.max_idx
         in_image = np.array(in_image)
         gt_image=np.array(gt_image)
         self.cur_idx=cur_idx # update for next batching 
