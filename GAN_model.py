@@ -218,7 +218,7 @@ class Generator_Graph:
             DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, scale_factor, scale_factor, 1], padding="SAME")
             DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias)
 
-            output = tf.sigmoid(DC3) * 255
+            output = tf.nn.relu(DC3)
         return output, DC3
 
     def generator(self, image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE):
@@ -347,7 +347,7 @@ class Discriminator_Graph:
         F20 = tf.matmul(R19, self.FNN20_kernel)
         F20 = tf.nn.bias_add(F20, self.FNN20_bias)
 
-        out = tf.nn.softmax(F20)
+        out = tf.nn.sigmoid(F20)
 
         net.append(out)
 
