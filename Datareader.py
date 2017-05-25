@@ -6,9 +6,6 @@ import numpy as np
 from Degradation import degrade, im2double
 import random
 
-
-
-
 class Dataset:
 
     def __init__(self, path, input_shape=(1024,1024), gt_shape=(1024,1024)):
@@ -27,41 +24,34 @@ class Dataset:
                     self.files.append(filename)
                     self.max_idx += 1
 
-    def read_image(self, path, size, option):   # this function reads image as float64
+    def read_image(self, path, size):   # this function reads image as float64
         image = Image.open(path)
-        ret = np.asarray(image, dtype=np.uint8)
+        ret = np.asarray(image.resize(size), dtype=np.uint8)
         return ret
 
     def change_format(self,image):
        return ((image*255)/np.max(image)).astype('uint8')
 
-    def get_batch_inputs(self, path, idx, option):
-        i_image = self.read_image(path,self.input_shape, option)
+    def get_batch_inputs(self, path, idx):
+        i_image = self.read_image(path, self.input_shape)
         # noise model
-        if (idx % 3 == 0):
+        if idx % 3 == 0:
             i_image = degrade(i_image, ['blur', 'noise', 'saturate', 'compress'])
-        elif (idx % 3 == 1):
+        elif idx % 3 == 1:
             i_image = degrade(i_image, ['noise', 'saturate', 'compress'])
         else:
             i_image = degrade(i_image, ['downscale', 'noise', 'compress'])
 
-        g_image = self.read_image(path, self.gt_shape, option)
+        g_image = self.read_image(path, self.gt_shape)
         return i_image.astype(np.float32), g_image.astype(np.float32)
 
-    def next_batch(self, batch_size, option):
+    def next_batch(self, batch_size):
         in_image=[]
         gt_image=[]
         cur_idx=self.cur_idx
         for i in range(batch_size):
             path = self.path+self.files[cur_idx]
-            i_image, g_image = self.get_batch_inputs(path, cur_idx, option)
-   # for debug
-   #        formatted = self.change_format(i_image)
-   #        ret = Image.fromarray(formatted)
-   #        ret.show()
-   #        formatted = self.change_format(g_image)
-   #        ret = Image.fromarray(formatted)
-   #        ret.show()
+            i_image, g_image = self.get_batch_inputs(path, cur_idx)
             in_image.append(i_image)
             gt_image.append(g_image)
             cur_idx = (cur_idx+1)%self.max_idx
@@ -70,13 +60,13 @@ class Dataset:
         self.cur_idx=cur_idx # update for next batching
         return in_image,gt_image
 
-    def random_batch(self,batch_size, option):
+    def random_batch(self,batch_size):
         in_image=[]
         gt_image=[]
         cur_idx = random.randint(0, self.max_idx)
         for i in range(batch_size):
             path = self.path + self.files[cur_idx]
-            i_image, g_image = self.get_batch_inputs(path,cur_idx, option)
+            i_image, g_image = self.get_batch_inputs(path,cur_idx)
             in_image.append(i_image)
             gt_image.append(g_image)
             cur_idx = (cur_idx+1)%self.max_idx
