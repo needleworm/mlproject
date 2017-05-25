@@ -87,7 +87,7 @@ class GAN:
             self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability, IMAGE_SIZE, IMAGE_RESIZE)
         with tf.variable_scope('D') as scope2:
             self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
-            scope2.reuse_variables()
+            #scope2.reuse_variables()
             self.D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability)
 
         # basic loss
@@ -180,7 +180,7 @@ def train(is_training=True):
 
      #############################     Train      ###############################
     if FLAGS.mode == "train":
-        train_dataset_reader = dr.Dataset(path=training_data_dir,
+        train_dataset_reader = dr2.Dataset(path=training_data_dir,
                                           input_shape=(int(IMAGE_SIZE * IMAGE_RESIZE), int(IMAGE_SIZE * IMAGE_RESIZE)),
                                           gt_shape=(int(IMAGE_SIZE * GT_RESIZE), int(IMAGE_SIZE * GT_RESIZE)))
         for itr in range(MAX_ITERATION):
