@@ -56,7 +56,7 @@ def change_format(image):
 
 def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False):
 
-    label = 'PSNR: {:.2f} SSIM: {:.f}'
+    label = 'PSNR: {:.2f} SSIM: {:.2f}'
 
     for i in range(batch_size):
         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
@@ -83,7 +83,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         
-        fig.savefig(directory + "/%s__%d.jpeg" % (time, i))
+        fig.savefig("logs/images/%s__%d.jpeg" % (time, i))
 
         if show_image is True:
             plt.show()
