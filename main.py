@@ -62,7 +62,7 @@ if FLAGS.reset:
     os.popen('mkdir ' + logs_dir + '/images')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
-learning_rate = 0.000001
+learning_rate = 0.00001
 MAX_ITERATION = int(30000)
 IMAGE_RESIZE = 0.5
 IMAGE_SIZE = 1024
