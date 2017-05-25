@@ -62,7 +62,7 @@ if FLAGS.reset:
     os.popen('mkdir ' + logs_dir + '/images')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
-learning_rate = 0.0001
+learning_rate = 0.000001
 MAX_ITERATION = int(30000)
 IMAGE_RESIZE = 0.5
 IMAGE_SIZE = 1024
@@ -213,8 +213,6 @@ def train(is_training=True):
                 valid_summary_writer_d.add_summary(valid_summary_str_d, itr)
                 valid_summary_writer_g.add_summary(valid_summary_str_g, itr)
 
-                print(train_high_resolution_image.dtype)
-                print(train_pred.dtype)
                 train_high_resolution_image = train_high_resolution_image.astype(np.uint8)
                 train_pred = train_pred.astype(np.uint8)
                 valid_high_resolution_image = valid_high_resolution_image.astype(np.uint8)
