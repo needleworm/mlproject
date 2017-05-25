@@ -3,7 +3,7 @@ import scipy.misc
 import os
 from PIL import Image
 import numpy as np
-from Degradation import degrade, im2double
+from Degradation import degrade
 import random
 
 class Dataset:
