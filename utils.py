@@ -58,18 +58,13 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
 
     label = 'PSNR: {:.2f}'
 
-    if batch_size == 1:
-        input_image = np.array([input_image])
-        output_image = np.array([output_image])
-        ground_truth = np.array([ground_truth])
-
     for i in range(batch_size):
         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
                                  subplot_kw={'adjustable': 'box-forced'})
         ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
         visual_predict_psnr = ev.psnr(1, ground_truth[i], output_image[i])
-        """
+        
         ax[0].imshow(change_format(input_image[i]))
         ax[0].set_xlabel(label.format(visual_psnr))
         ax[0].set_title('Input Image')
@@ -83,10 +78,10 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
             ax.set_xticks([])
             ax.set_yticks([])
         plt.tight_layout()
-        """
+        
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         
-        fig.savefig(directory + "/%s__%d.jpg" % (time, i))
+        fig.savefig(directory + "/%s__%d.jpeg" % (time, i))
 
         if show_image is True:
             plt.show()
