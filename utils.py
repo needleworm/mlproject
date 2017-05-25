@@ -56,7 +56,7 @@ def change_format(image):
 
 def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False):
 
-    label = 'PSNR: {:.2f}'
+    label = 'PSNR: {:.2f} SSIM: {:.f}'
 
     for i in range(batch_size):
         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
@@ -64,12 +64,14 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
         visual_predict_psnr = ev.psnr(1, ground_truth[i], output_image[i])
-        
+        visual_ssim = ev.ssim(1, ground_truth[i], input_image[i])
+        visual_predict_ssim = ev.ssim(1, ground_truth[i], input_image[i])
+
         ax[0].imshow(change_format(input_image[i]))
-        ax[0].set_xlabel(label.format(visual_psnr))
+        ax[0].set_xlabel(label.format(visual_psnr, visual_ssim))
         ax[0].set_title('Input Image')
         ax[1].imshow(change_format(output_image[i]))
-        ax[1].set_xlabel(label.format(visual_predict_psnr))
+        ax[1].set_xlabel(label.format(visual_predict_psnr, visual_predict_ssim))
         ax[1].set_title('Output Image')
         ax[2].imshow(change_format(ground_truth[i]))
         ax[2].set_title('Ground Truth')

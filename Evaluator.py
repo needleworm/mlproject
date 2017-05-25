@@ -34,7 +34,7 @@ def ssim(batch_size, ref_image_set, output_image_set):
     for i in range(batch_size):
         ref_image = ref_image_set[i]
         output_image = output_image_set[i]
-        ssim_val = compare_ssim(ref_image, output_image, data_range=ref_image.max() - ref_image.min(),
+        ssim_val += compare_ssim(ref_image, output_image, data_range=ref_image.max() - ref_image.min(),
                                 multichannel=True)
 
     ssim_val = np.mean(ssim_val)
