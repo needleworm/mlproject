@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/cpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
 tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
@@ -62,11 +62,11 @@ if FLAGS.reset:
     os.popen('mkdir ' + logs_dir + '/images')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
-learning_rate = 0.0001
+learning_rate = 0.00001
 MAX_ITERATION = int(30000)
-IMAGE_RESIZE = 1.0
+IMAGE_RESIZE = 0.5
 IMAGE_SIZE = 1024
-GT_RESIZE = 1.0
+GT_RESIZE = 0.5
 POS_WEIGHT = 0.1
 decay = 0.9
 stddev = 0.02
@@ -75,17 +75,16 @@ keep_prob = 0.5
 
 
 class GAN:
-    def __init__(self, batch_size, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5, is_training=True):
+    def __init__(self, batch_size, is_training=True):
         self.keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
-        self.low_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3], name="row_resolution_image")
-        self.high_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3], name="high_resolution_image")
+        self.low_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE, 3], name="low_resolution_image")
+        self.high_resolution_image = tf.placeholder(tf.float32, shape=[batch_size, IMAGE_SIZE * GT_RESIZE, IMAGE_SIZE * GT_RESIZE, 3], name="high_resolution_image")
 
         self.Generator = GM.Generator(batch_size, is_training, IMAGE_SIZE, IMAGE_RESIZE, self.keep_probability)
         self.Discriminator = GM.Discriminator(is_training)
 
         with tf.variable_scope('G'):
-            self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability)
-
+            self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability, IMAGE_SIZE, IMAGE_RESIZE)
         with tf.variable_scope('D') as scope2:
             self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
             scope2.reuse_variables()
@@ -127,9 +126,9 @@ def train(is_training=True):
     print("Graph Initialization...")
     with tf.device(FLAGS.device):
         with tf.variable_scope("model", reuse=None):
-            m_train = GAN(FLAGS.tr_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=True)
+            m_train = GAN(FLAGS.tr_batch_size, is_training=True)
         with tf.variable_scope("model", reuse=True):
-            m_valid = GAN(FLAGS.val_batch_size, IMAGE_SIZE, IMAGE_RESIZE, keep_prob, is_training=False)
+            m_valid = GAN(FLAGS.val_batch_size, is_training=False)
     print("Done")
 
     ##############################  Summary Part  ##############################
@@ -160,8 +159,8 @@ def train(is_training=True):
     print("Session Initialization...")
 
     validation_dataset_reader = dr2.Dataset(path=validation_data_dir,
-                                           input_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE),
-                                           gt_shape=(IMAGE_SIZE*IMAGE_RESIZE, IMAGE_SIZE*IMAGE_RESIZE))
+                                           input_shape=(int(IMAGE_SIZE*IMAGE_RESIZE), int(IMAGE_SIZE*IMAGE_RESIZE)),
+                                           gt_shape=(int(IMAGE_SIZE*GT_RESIZE), int(IMAGE_SIZE*GT_RESIZE)))
 
     val_size = validation_dataset_reader.max_idx
     print("Done")
@@ -181,17 +180,17 @@ def train(is_training=True):
      #############################     Train      ###############################
     if FLAGS.mode == "train":
         train_dataset_reader = dr.Dataset(path=training_data_dir,
-                                          input_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE),
-                                          gt_shape=(IMAGE_SIZE * IMAGE_RESIZE, IMAGE_SIZE * IMAGE_RESIZE))
+                                          input_shape=(int(IMAGE_SIZE * IMAGE_RESIZE), int(IMAGE_SIZE * IMAGE_RESIZE)),
+                                          gt_shape=(int(IMAGE_SIZE * GT_RESIZE), int(IMAGE_SIZE * GT_RESIZE)))
         for itr in range(MAX_ITERATION):
-            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size, 32)
+            train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
                          m_train.keep_probability: keep_prob}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
-                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size, 32)
+                valid_low_resolution_image, valid_high_resolution_image = validation_dataset_reader.next_batch(FLAGS.val_batch_size)
                 valid_dict = {m_valid.low_resolution_image: valid_low_resolution_image,
                              m_valid.high_resolution_image: valid_high_resolution_image,
                              m_valid.keep_probability: 1.0}
@@ -214,6 +213,10 @@ def train(is_training=True):
                 valid_summary_writer_d.add_summary(valid_summary_str_d, itr)
                 valid_summary_writer_g.add_summary(valid_summary_str_g, itr)
 
+                train_high_resolution_image = train_high_resolution_image.astype(np.uint8)
+                train_pred = train_pred.astype(np.uint8)
+                valid_high_resolution_image = valid_high_resolution_image.astype(np.uint8)
+                valid_pred = train_pred.astype(np.uint8)
                 train_psnr = ev.psnr(FLAGS.tr_batch_size, train_high_resolution_image, train_pred)
                 valid_psnr = ev.psnr(FLAGS.val_batch_size, valid_high_resolution_image, valid_pred)
                 train_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: train_psnr})
@@ -229,7 +232,7 @@ def train(is_training=True):
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
 
             if itr % 500 == 0:
-                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
+                visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
                 visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
@@ -241,7 +244,7 @@ def train(is_training=True):
     ###########################     Visualize     ##############################
     elif FLAGS.mode == "visualize":
 
-        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size, 32)
+        visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
         visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                        m_valid.high_resolution_image: visual_high_resolution_image,
                        m_valid.keep_probability: 1.0}
