@@ -67,12 +67,12 @@ def DCNN(color):
 
 
 class Generator:
-    def __init__(self, batch_size, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
+    def __init__(self, batch_size, is_training, IMAGE_SIZE, IMAGE_RESIZE, keep_prob=0.5):
 
         self.Generator_Graph = Generator_Graph(is_training)
 
-    def generate(self, image, is_training, keep_prob):
-        pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob)
+    def generate(self, image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE):
+        pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE)
 
         return pred_annotation, logits
 
@@ -150,7 +150,7 @@ class Generator_Graph:
 
         return net
 
-    def _Decoder(self, encoder, keep_prob, is_training, IMAGE_SIZE=1024, ANNO_RESIZE=1.0):
+    def _Decoder(self, encoder, keep_prob, is_training, IMAGE_SIZE, ANNO_RESIZE):
         """
         Semantic segmentation network definition
         :param image: input image. Should have values in range 0-255
@@ -221,9 +221,9 @@ class Generator_Graph:
             output = tf.sigmoid(DC3) * 255
         return output, DC3
 
-    def generator(self, image, is_training, keep_prob):
+    def generator(self, image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE):
         self.encoder = self._Encoder(image, is_training)
-        self.decoder = self._Decoder(self.encoder, keep_prob, is_training)
+        self.decoder = self._Decoder(self.encoder, keep_prob, is_training, IMAGE_SIZE, IMAGE_RESIZE)
         return self.decoder
 
 
@@ -234,7 +234,6 @@ class Discriminator:
 
     def discriminate(self, image, is_training, keep_prob):
         disc, logits = self.Discriminator_Graph.discriminator(image, is_training, keep_prob)
-        #trainable_var = tf.trainable_variables()
         return disc, logits
 
 
