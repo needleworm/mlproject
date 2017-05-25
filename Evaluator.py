@@ -19,8 +19,10 @@ def psnr(batch_size, ref_image_set, output_image_set):
         ref_image = ref_image_set[i]
         output_image = output_image_set[i]
         psnr_val += compare_psnr(ref_image, output_image, data_range=ref_image.max() - ref_image.min())
-
-    psnr_val = np.mean(psnr_val)
+    if batch_size is 0:
+        print("batch size is zero error!")
+    else:
+        psnr_val /= batch_size
     return psnr_val
 
 
@@ -33,7 +35,7 @@ def ssim(batch_size, ref_image_set, output_image_set):
     if batch_size == 1:
         if ref_image_set.ndim > 3:
             ref_image_set = ref_image_set[0]
-            output_image_set  = output_image_set[0]
+            output_image_set = output_image_set[0]
         return compare_ssim(ref_image_set, output_image_set,
                             data_range=ref_image_set.max() - ref_image_set.min(), multichannel=True)
 
@@ -42,8 +44,10 @@ def ssim(batch_size, ref_image_set, output_image_set):
         output_image = output_image_set[i]
         ssim_val += compare_ssim(ref_image, output_image, data_range=ref_image.max() - ref_image.min(),
                                  multichannel=True)
-
-    ssim_val = np.mean(ssim_val)
+    if batch_size is 0:
+        print("batch size is zero error!")
+    else:
+        ssim_val /= batch_size
 
     return ssim_val
 
