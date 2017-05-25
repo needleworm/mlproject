@@ -6,7 +6,7 @@
         2017.04.15.
 """
 
-__author__ = 'BHBAN, JTKIM'
+__author__ = 'BHBAN'
 
 import tensorflow as tf
 import utils as utils
@@ -239,6 +239,126 @@ class Discriminator:
 
 
 class Discriminator_Graph:
+    def __init__(self, is_training=True):
+        self.is_training = is_training
+
+        # VGG Net
+        #  64
+        self.CNN1_shape = [2, 2, 3, 64]
+        self.CNN1_kernel = tf.get_variable("DISC_CNN_1_W", initializer=tf.truncated_normal(self.CNN1_shape, stddev=stddev))
+        self.CNN1_bias = tf.get_variable("DISC_CNN_1_B", initializer=tf.constant(0.0, shape=[self.CNN1_shape[-1]]))
+
+        #  128
+        self.CNN3_shape = [2, 2, 64, 128]
+        self.CNN3_kernel = tf.get_variable("DISC_CNN_3_W", initializer=tf.truncated_normal(self.CNN3_shape, stddev=stddev))
+        self.CNN3_bias = tf.get_variable("DISC_CNN_3_B", initializer=tf.constant(0.0, shape=[self.CNN3_shape[-1]]))
+
+        #  256
+        self.CNN5_shape = [2, 2, 128, 256]
+        self.CNN5_kernel = tf.get_variable("DISC_CNN_5_W", initializer=tf.truncated_normal(self.CNN5_shape, stddev=stddev))
+        self.CNN5_bias = tf.get_variable("DISC_CNN_5_B", initializer=tf.constant(0.0, shape=[self.CNN5_shape[-1]]))
+
+        #  512
+        self.CNN9_shape = [2, 2, 256, 512]
+        self.CNN9_kernel = tf.get_variable("DISC_CNN_9_W", initializer=tf.truncated_normal(self.CNN9_shape, stddev=stddev))
+        self.CNN9_bias = tf.get_variable("DISC_CNN_9_B", initializer=tf.constant(0.0, shape=[self.CNN9_shape[-1]]))
+
+        self.CNN16_shape = [2, 2, 512, 512]
+        self.CNN16_kernel = tf.get_variable("DISC_CNN_16_W", initializer=tf.truncated_normal(self.CNN16_shape, stddev=stddev))
+        self.CNN16_bias = tf.get_variable("DISC_CNN_16_B", initializer=tf.constant(0.0, shape=[self.CNN16_shape[-1]]))
+
+        # Fully Connected Networks
+        self.FNN17_shape = [512, 4096]
+        self.FNN17_kernel = tf.get_variable("DISC_FNN_17_W", initializer=tf.truncated_normal(self.FNN17_shape, stddev=stddev))
+        self.FNN17_bias = tf.get_variable("DISC_FNN_17_B", initializer=tf.constant(0.0, shape=[self.FNN17_shape[-1]]))
+
+        self.FNN18_shape = [4096, 4096]
+        self.FNN18_kernel = tf.get_variable("DISC_FNN_18_W", initializer=tf.truncated_normal(self.FNN18_shape, stddev=stddev))
+        self.FNN18_bias = tf.get_variable("DISC_FNN_18_B", initializer=tf.constant(0.0, shape=[self.FNN18_shape[-1]]))
+
+        self.FNN19_shape = [4096, 1000]
+        self.FNN19_kernel = tf.get_variable("DISC_FNN_19_W", initializer=tf.truncated_normal(self.FNN19_shape, stddev=stddev))
+        self.FNN19_bias = tf.get_variable("DISC_FNN_19_B", initializer=tf.constant(0.0, shape=[self.FNN19_shape[-1]]))
+
+        self.FNN20_shape = [1000, 2]
+        self.FNN20_kernel = tf.get_variable("DISC_FNN_20_W", initializer=tf.truncated_normal(self.FNN20_shape, stddev=stddev))
+        self.FNN20_bias = tf.get_variable("DISC_FNN_20_B", initializer=tf.constant(0.0, shape=[self.FNN20_shape[-1]]))
+
+    def Graph(self, image, is_training, keep_prob):
+        net = []
+        net.append(image)
+        stride=1
+        # Conv-Relu-Conv-Relu-Maxpool
+        C1 = tf.nn.conv2d(image, self.CNN1_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C1 = tf.nn.bias_add(C1, self.CNN1_bias)
+        C1 = tf.contrib.layers.batch_norm(C1, decay=decay, is_training=is_training, updates_collections=None)
+        R1 = tf.nn.relu(C1, name="DISC_Relu_1")
+        P1 = tf.nn.max_pool(R1, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
+        net.append(P1)
+
+        # Conv-Relu-Conv-Relu-Maxpool
+        C3 = tf.nn.conv2d(P1, self.CNN3_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C3 = tf.nn.bias_add(C3, self.CNN3_bias)
+        C3 = tf.contrib.layers.batch_norm(C3, decay=decay, is_training=is_training, updates_collections=None)
+        R3 = tf.nn.relu(C3, name="DISC_Relu_3")
+
+        P2 = tf.nn.max_pool(R3, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
+        net.append(P2)
+
+        # Conv-Relu * 4 times + Maxpool
+        C5 = tf.nn.conv2d(P2, self.CNN5_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C5 = tf.nn.bias_add(C5, self.CNN5_bias)
+        C5 = tf.contrib.layers.batch_norm(C5, decay=decay, is_training=is_training, updates_collections=None)
+        R5 = tf.nn.relu(C5, name="DISC_Relu_5")
+
+        P3 = tf.nn.max_pool(R5, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
+        net.append(P3)
+
+        # Conv-Relu * 4 times + Maxpool
+        C9 = tf.nn.conv2d(P3, self.CNN9_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C9 = tf.nn.bias_add(C9, self.CNN9_bias)
+        C9 = tf.contrib.layers.batch_norm(C9, decay=decay, is_training=is_training, updates_collections=None)
+        R9 = tf.nn.relu(C9, name="DISC_Relu_9")
+        P4 = tf.nn.max_pool(R9, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        net.append(P4)
+
+        # Conv-Relu * 4 times + Maxpool
+
+        C16 = tf.nn.conv2d(P4, self.CNN16_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C16 = tf.nn.bias_add(C16, self.CNN16_bias)
+        C16 = tf.contrib.layers.batch_norm(C16, decay=decay, is_training=is_training, updates_collections=None)
+        R16 = tf.nn.relu(C16, name="DISC_Relu_16")
+
+        P5 = tf.nn.max_pool(R16, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        net.append(P5)
+
+        # FC-Relu-FC-Relu-FC-SoftMax
+        F17 = tf.matmul(tf.reshape(P5, [-1, self.FNN17_shape[0]]), self.FNN17_kernel)
+        F17 = tf.nn.bias_add(F17, self.FNN17_bias)
+        R17 = tf.nn.relu(F17, name="DISC_Relu_17")
+
+        F18 = tf.matmul(R17, self.FNN18_kernel)
+        F18 = tf.nn.bias_add(F18, self.FNN18_bias)
+        R18 = tf.nn.relu(F18, name="DISC_Relu_18")
+
+        F19 = tf.matmul(R18, self.FNN19_kernel)
+        F19 = tf.nn.bias_add(F19, self.FNN19_bias)
+        R19 = tf.nn.relu(F19, name="DISC_Relu_19")
+
+        F20 = tf.matmul(R19, self.FNN20_kernel)
+        F20 = tf.nn.bias_add(F20, self.FNN20_bias)
+
+        out = tf.nn.softmax(F20)
+
+        net.append(out)
+
+        return out, net
+
+    def discriminator(self, image, is_training, keep_prob):
+        return self.Graph(image, is_training, keep_prob)
+
+
+class Discriminator_Graph_long:
     def __init__(self, is_training=True):
         self.is_training = is_training
 
