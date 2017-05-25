@@ -28,16 +28,8 @@ class Dataset:
                     self.max_idx += 1
 
     def read_image(self, path, size, option):   # this function reads image as float64
-
-        if option==64:
-            image =(scipy.misc.imread(path)).astype(float)
-            ret=scipy.misc.imresize(image,size).astype(float)
-        elif option==32:
-            image =(scipy.misc.imread(path)).astype(np.float32)
-            ret=scipy.misc.imresize(image,size).astype(np.float32)
-        elif option==8:
-            image = Image.open(path)
-            ret = np.asarray( image.resize(size,Image.ANTIALIAS))
+        image = Image.open(path)
+        ret = np.asarray(image, dtype=np.uint8)
         return ret
 
     def change_format(self,image):
@@ -53,15 +45,8 @@ class Dataset:
         else:
             i_image = degrade(i_image, ['downscale', 'noise', 'compress'])
 
-        if option==64:
-            i_image = i_image.astype(float)
-
-        elif option==32:
-            i_image = i_image.astype('float32')
-
         g_image = self.read_image(path, self.gt_shape, option)
-        g_image = im2double(g_image)
-        return i_image, g_image
+        return i_image.astype(np.float32), g_image.astype(np.float32)
 
     def next_batch(self, batch_size, option):
         in_image=[]
@@ -99,5 +84,6 @@ class Dataset:
         gt_image = np.array(gt_image)
         self.cur_idx = cur_idx # update for next batching
         return in_image, gt_image
+
 
 

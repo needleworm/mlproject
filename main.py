@@ -214,6 +214,12 @@ def train(is_training=True):
                 valid_summary_writer_d.add_summary(valid_summary_str_d, itr)
                 valid_summary_writer_g.add_summary(valid_summary_str_g, itr)
 
+                print(train_high_resolution_image.dtype)
+                print(train_pred.dtype)
+                train_high_resolution_image = train_high_resolution_image.astype(np.uint8)
+                train_pred = train_pred.astype(np.uint8)
+                valid_high_resolution_image = valid_high_resolution_image.astype(np.uint8)
+                valid_pred = train_pred.astype(np.uint8)
                 train_psnr = ev.psnr(FLAGS.tr_batch_size, train_high_resolution_image, train_pred)
                 valid_psnr = ev.psnr(FLAGS.val_batch_size, valid_high_resolution_image, valid_pred)
                 train_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: train_psnr})
