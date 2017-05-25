@@ -3,7 +3,7 @@ import scipy.misc
 import os
 from PIL import Image
 import numpy as np
-from Degradation import degrade, im2double
+from Degradation import degrade
 import random
 
 class Dataset:
@@ -63,7 +63,7 @@ class Dataset:
     def random_batch(self,batch_size):
         in_image=[]
         gt_image=[]
-        cur_idx = random.randint(0, self.max_idx)
+        cur_idx = random.randint(0, self.max_idx-1)
         for i in range(batch_size):
             path = self.path + self.files[cur_idx]
             i_image, g_image = self.get_batch_inputs(path,cur_idx)

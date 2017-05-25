@@ -87,7 +87,7 @@ class GAN:
             self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability, IMAGE_SIZE, IMAGE_RESIZE)
         with tf.variable_scope('D') as scope2:
             self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
-            scope2.reuse_variables()
+            #scope2.reuse_variables()
             self.D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability)
 
         # basic loss
@@ -105,8 +105,9 @@ class GAN:
         by loss_d, Discriminator trains to figure out whether given image is real or not.
             With this process, We hope the generator to draw better image.
         """
-        self.loss_g = tf.reduce_mean(tf.square(self.rgb_predict - self.high_resolution_image))
-        self.loss_d = tf.reduce_mean(tf.log(self.D1) - tf.log(self.D2)) + self.loss_g
+        self.loss_g = tf.reduce_mean(tf.squared_difference(self.rgb_predict, self.high_resolution_image))
+        self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2)) + self.loss_g
+
         trainable_var = tf.trainable_variables()
 
         self.train_op_d, self.train_op_g = self.train(trainable_var)
@@ -179,7 +180,7 @@ def train(is_training=True):
 
      #############################     Train      ###############################
     if FLAGS.mode == "train":
-        train_dataset_reader = dr.Dataset(path=training_data_dir,
+        train_dataset_reader = dr2.Dataset(path=training_data_dir,
                                           input_shape=(int(IMAGE_SIZE * IMAGE_RESIZE), int(IMAGE_SIZE * IMAGE_RESIZE)),
                                           gt_shape=(int(IMAGE_SIZE * GT_RESIZE), int(IMAGE_SIZE * GT_RESIZE)))
         for itr in range(MAX_ITERATION):
@@ -231,7 +232,7 @@ def train(is_training=True):
             if itr % 50 == 0:
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
 
-            if itr % 500 == 0:
+            if itr % 50 == 0:
                 visual_low_resolution_image, visual_high_resolution_image = validation_dataset_reader.random_batch(FLAGS.val_batch_size)
                 visual_dict = {m_valid.low_resolution_image: visual_low_resolution_image,
                                m_valid.high_resolution_image: visual_high_resolution_image,
