@@ -44,14 +44,14 @@ def degrade(image, degrade_type):
         degrade_image = transform.rescale(degrade_image, (1./scale), order=3, mode='constant')
         degrade_image = transform.rescale(degrade_image.astype(np.uint8), (scale), order=3, mode='constant')
         degrade_image = degrade_image.astype(np.uint8)
-
+    """
     if ("compress" in degrade_type):
         # % jpeg compression
         # imwrite(IBlur, 'blur.jpg', 'Quality', 70);
 
         io.imsave("images/compress.jpeg", degrade_image.astype(np.uint8), plugin='pil', quality=70)
         degrade_image = io.imread("images/compress.jpeg")
-
+    """
     return degrade_image.astype(np.uint8)
 
 
