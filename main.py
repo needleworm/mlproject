@@ -140,13 +140,17 @@ def train(is_training=True):
     loss_g_summary_op = tf.summary.scalar("LOSS_g", loss_g_ph)
     psnr_ph = tf.placeholder(dtype=tf.float32)
     psnr_summary_op = tf.summary.scalar("PSNR", psnr_ph)
+    ssim_ph = tf.placeholder(dtype=tf.float32)
+    ssim_summary_op = tf.summary.scalar("SSIM", ssim_ph)
 
     train_summary_writer_d = tf.summary.FileWriter(logs_dir + '/train/loss_d', max_queue=2)
     valid_summary_writer_d = tf.summary.FileWriter(logs_dir + '/valid/loss_d', max_queue=2)
     train_summary_writer_g = tf.summary.FileWriter(logs_dir + '/train/loss_g', max_queue=2)
     valid_summary_writer_g = tf.summary.FileWriter(logs_dir + '/valid/loss_g', max_queue=2)
-    train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr')
-    valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr')
+    train_psnr_writer = tf.summary.FileWriter(logs_dir + '/train/psnr', max_queue=2)
+    valid_psnr_writer = tf.summary.FileWriter(logs_dir + '/valid/psnr', max_queue=2)
+    train_ssim_writer = tf.summary.FileWriter(logs_dir + '/train/ssim', max_queue=2)
+    valid_ssim_writer = tf.summary.FileWriter(logs_dir + '/valid/ssim', max_queue=2)
 
     print("Done")
 
@@ -222,12 +226,22 @@ def train(is_training=True):
                 valid_psnr = ev.psnr(FLAGS.val_batch_size, valid_high_resolution_image, valid_pred)
                 train_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: train_psnr})
                 valid_psnr_str = sess.run(psnr_summary_op, feed_dict={psnr_ph: valid_psnr})
+                train_ssim = ev.ssim(FLAGS.tr_batch_size, train_high_resolution_image, train_pred)
+                valid_ssim = ev.ssim(FLAGS.val_batch_size, valid_high_resolution_image, valid_pred)
+                train_ssim_str = sess.run(ssim_summary_op, feed_dict={ssim_ph: train_ssim})
+                valid_ssim_str = sess.run(ssim_summary_op, feed_dict={ssim_ph: valid_ssim})
                 print("%s ---> Validation_PSNR: %g" % (datetime.datetime.now(), valid_psnr))
                 print("Step: %d, Train_PSNR:%g" % (itr, train_psnr))
+                print("Step: %d, Train_SSIM:%g" % (itr, train_ssim))
+
                 train_psnr_writer.add_graph(sess.graph)
                 valid_psnr_writer.add_graph(sess.graph)
                 train_psnr_writer.add_summary(train_psnr_str, itr)
                 valid_psnr_writer.add_summary(valid_psnr_str, itr)
+                train_ssim_writer.add_graph(sess.graph)
+                valid_ssim_writer.add_graph(sess.graph)
+                train_ssim_writer.add_summary(train_ssim_str, itr)
+                valid_ssim_writer.add_summary(valid_ssim_str, itr)
 
             if itr % 50 == 0:
                 saver.save(sess, logs_dir + "/model.ckpt", itr)
