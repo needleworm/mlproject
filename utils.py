@@ -83,7 +83,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         
-        fig.savefig(directory + "/%s__%d.jpeg" % (time, i))
+        fig.savefig("logs/images/%s__%d.jpeg" % (time, i))
 
         if show_image is True:
             plt.show()
