@@ -5,7 +5,7 @@
     latest modification :
         2017.05.23.
 """
-
+ 
 
 from __future__ import print_function
 import tensorflow as tf
