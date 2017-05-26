@@ -54,7 +54,7 @@ def change_format(image):
     return ((image * 255) / np.max(image)).astype('uint8')
 
 
-def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False, itr):
+def save_images(batch_size, directory, input_image, output_image, ground_truth, itr,show_image=False):
 
     label = 'PSNR: {:.2f} SSIM: {:.2f}'
 
