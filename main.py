@@ -231,6 +231,7 @@ def train(is_training=True):
                 train_ssim_str = sess.run(ssim_summary_op, feed_dict={ssim_ph: train_ssim})
                 valid_ssim_str = sess.run(ssim_summary_op, feed_dict={ssim_ph: valid_ssim})
                 print("%s ---> Validation_PSNR: %g" % (datetime.datetime.now(), valid_psnr))
+                print("%s ---> Validation_PSNR: %g" % (datetime.datetime.now(), valid_ssim))
                 print("Step: %d, Train_mean_PSNR:%g" % (itr, train_psnr))
                 print("Step: %d, Train_mean_SSIM:%g" % (itr, train_ssim))
 
