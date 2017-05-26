@@ -54,7 +54,7 @@ def change_format(image):
     return ((image * 255) / np.max(image)).astype('uint8')
 
 
-def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False):
+def save_images(batch_size, directory, input_image, output_image, ground_truth, show_image=False, itr):
 
     label = 'PSNR: {:.2f} SSIM: {:.2f}'
 
@@ -83,7 +83,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         
         time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
         
-        fig.savefig("logs/images/%s__%d.jpeg" % (time, i))
+        fig.savefig("logs/images/%s__%d.jpeg" % (time, itr))
 
         if show_image is True:
             plt.show()
