@@ -254,7 +254,7 @@ def train(is_training=True):
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
                 utils.save_images(FLAGS.val_batch_size, logs_dir + '/images', visual_low_resolution_image, predict,
-                                  visual_high_resolution_image, show_image=False, itr)
+                                  visual_high_resolution_image, itr, show_image=False)
                 print('Validation images were saved!')
 
     ###########################     Visualize     ##############################
@@ -267,7 +267,7 @@ def train(is_training=True):
         predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
 
         utils.save_images(FLAGS.val_batch_size, validation_data_dir, visual_low_resolution_image, predict,
-                                       visual_high_resolution_image, show_image=False, itr)
+                                       visual_high_resolution_image, 0,show_image=False)
         print('Validation images were saved!')
 
 
