@@ -98,7 +98,7 @@ class Generator_Graph:
         self.CNN4_bias   = tf.get_variable("E_CNN_4_B", initializer=tf.constant(0.0, shape=[self.CNN4_shape[-1]]))
 
         # Decoder
-        self.CNN6_shape  = [7, 7, 128, 128]
+        self.CNN6_shape  = [2, 2, 128, 128]
         self.CNN6_kernel = tf.get_variable("D_CNN_6_W", initializer=tf.truncated_normal(self.CNN6_shape, stddev=stddev))
         self.CNN6_bias   = tf.get_variable("D_CNN_6_B", initializer=tf.constant(0.0, shape=[self.CNN6_shape[-1]]))
 
@@ -195,7 +195,6 @@ class Generator_Graph:
 
             DC1 = tf.nn.conv2d_transpose(D8, self.DCNN1_kernel, deconv_shape_1.as_list(), strides=[1, stride, stride, 1], padding="SAME")
             DC1 = tf.nn.bias_add(DC1, self.DCNN1_bias)
-            F1 = tf.add(DC1, encoder[4], name="fuse_1")
 
             # Deconv 2
             deconv_shape_2 = encoder[3].get_shape()
@@ -203,19 +202,18 @@ class Generator_Graph:
             self.DCNN2_kernel = tf.get_variable("D_DCNN_2_W", initializer=tf.truncated_normal(self.DCNN2_shape, stddev=stddev))
             self.DCNN2_bias   = tf.get_variable("D_DCNN_2_B", initializer=tf.constant(0.0, shape=[self.DCNN2_shape[-2]]))
 
-            DC2 = tf.nn.conv2d_transpose(F1, self.DCNN2_kernel, deconv_shape_2.as_list(), strides=[1, stride, stride, 1], padding="SAME")
+            DC2 = tf.nn.conv2d_transpose(DC1, self.DCNN2_kernel, deconv_shape_2.as_list(), strides=[1, stride, stride, 1], padding="SAME")
             DC2 = tf.nn.bias_add(DC2, self.DCNN2_bias)
-            F2 = tf.add(DC2, encoder[3], name="fuse_2")
 
             # Deconv 3
             shape = encoder[0].get_shape().as_list()
             deconv_shape_3 = (shape[0], int(IMAGE_SIZE * ANNO_RESIZE), int(IMAGE_SIZE * ANNO_RESIZE), 3)
-            scale_factor = int(deconv_shape_3[1] / F2.get_shape().as_list()[1])
+            scale_factor = int(deconv_shape_3[1] / DC2.get_shape().as_list()[1])
             self.DCNN3_shape  = [16, 16, 3, deconv_shape_2[3].value]
             self.DCNN3_kernel = tf.get_variable("D_DCNN_3_W", initializer=tf.truncated_normal(self.DCNN3_shape, stddev=stddev))
             self.DCNN3_bias   = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[3]))
 
-            DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, deconv_shape_3, strides=[1, scale_factor, scale_factor, 1], padding="SAME")
+            DC3 = tf.nn.conv2d_transpose(DC2, self.DCNN3_kernel, deconv_shape_3, strides=[1, scale_factor, scale_factor, 1], padding="SAME")
             DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias)
 
             output = tf.nn.relu(DC3)
@@ -575,4 +573,3 @@ class Discriminator_Graph_long:
 
     def discriminator(self, image, is_training, keep_prob):
         return self.Graph(image, is_training, keep_prob)
-

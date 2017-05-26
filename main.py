@@ -5,7 +5,7 @@
     latest modification :
         2017.05.23.
 """
- 
+
 
 from __future__ import print_function
 import tensorflow as tf
@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string("device", "/cpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
 tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
@@ -64,9 +64,9 @@ if FLAGS.reset:
 
 learning_rate = 0.00001
 MAX_ITERATION = int(30000)
-IMAGE_RESIZE = 0.5
+IMAGE_RESIZE = 0.25
 IMAGE_SIZE = 1024
-GT_RESIZE = 0.5
+GT_RESIZE = 0.25
 POS_WEIGHT = 0.1
 decay = 0.9
 stddev = 0.02
@@ -106,7 +106,7 @@ class GAN:
             With this process, We hope the generator to draw better image.
         """
         self.loss_g = tf.reduce_mean(tf.squared_difference(self.rgb_predict, self.high_resolution_image))
-        self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2)) + self.loss_g
+        self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2))
 
         trainable_var = tf.trainable_variables()
 
