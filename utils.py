@@ -88,5 +88,6 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
         if show_image is True:
             plt.show()
         plt.cla()
+        plt.close(fig)
 
 
