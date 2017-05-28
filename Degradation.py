@@ -11,7 +11,7 @@ def degrade(image, degrade_type):
         # IBlur = imfilter(I, K, 'conv', 'replicate');
         # IBlur = uint8((IBlur)*255+0.5);
         # IBlur = imnoise(IBlur, 'gaussian', 0, 0.0005);
-        degrade_image = filters.gaussian(degrade_image, sigma=7, multichannel=True)
+        degrade_image = filters.gaussian(degrade_image, sigma=0.25, multichannel=True)
 
 
     if ("noise" in degrade_type):
