@@ -106,7 +106,7 @@ class Generator_Graph:
         net = []
         net.append(image)
         print(image.shape)
-        stride=2
+        stride=1
 
         # Conv-Relu-MaxPool 1
         C1 = tf.nn.conv2d(image, self.CNN1_kernel, strides=[1, stride, stride, 1], padding="SAME")
@@ -155,7 +155,7 @@ class Generator_Graph:
         :param is_training:
         :return:
         """
-        stride = 2
+        stride = 1
         with tf.variable_scope("Decoder"):
             # polling 5
             encoder_final_layer = encoder[-1]
@@ -200,7 +200,7 @@ class Generator_Graph:
                                                 initializer=tf.truncated_normal(self.DCNN5_shape, stddev=stddev))
             self.DCNN5_bias = tf.get_variable("D_DCNN_5_B", initializer=tf.constant(0.0, shape=[3]))
 
-            stride = 2
+            stride = 1
 
             # Deconv 1
             DC1 = tf.nn.conv2d_transpose(R6, self.DCNN1_kernel, self.deconv_shape_1, strides=[1, stride, stride, 1], padding="SAME")

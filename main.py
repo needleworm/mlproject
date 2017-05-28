@@ -64,9 +64,9 @@ if FLAGS.reset:
 
 learning_rate = 0.00001
 MAX_ITERATION = int(300000)
-IMAGE_RESIZE = 0.5
+IMAGE_RESIZE = 0.25
 IMAGE_SIZE = 1024
-GT_RESIZE = 0.5
+GT_RESIZE = 0.25
 POS_WEIGHT = 0.1
 decay = 0.9
 stddev = 0.02
