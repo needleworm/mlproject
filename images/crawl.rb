@@ -1,5 +1,6 @@
 categories = {}
-categories["artifact"] = "http://imagenet.stanford.edu/api/text/imagenet.synset.geturls?wnid=n00021939"
+categories["artifact11"] = "http://imagenet.stanford.edu/api/text/imagenet.synset.geturls?wnid=n00021939"
+categories["mics11"] = "http://image-net.org/api/text/imagenet.synset.geturls?wnid=n13912260"
 
 categories.keys.each do |key|
   #`wget #{url}`
