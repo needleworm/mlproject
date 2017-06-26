@@ -112,7 +112,6 @@ class Generator_Graph:
 
         # Conv-Relu-MaxPool 1
         C1 = tf.nn.conv2d(image, self.CNN1_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C1 = tf.nn.bias_add(C1, self.CNN1_bias)
         C1 = tf.contrib.layers.batch_norm(C1, decay=decay, is_training=is_training, updates_collections=None)
         R1 = tf.nn.relu(C1, name="Relu_1")
         #P1 = tf.nn.max_pool(R1, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
@@ -120,7 +119,6 @@ class Generator_Graph:
 
         # Conv-Relu-MaxPool 2
         C2 = tf.nn.conv2d(R1, self.CNN2_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C2 = tf.nn.bias_add(C2, self.CNN2_bias)
         C2 = tf.contrib.layers.batch_norm(C2, decay=decay, is_training=is_training, updates_collections=None)
         R2 = tf.nn.relu(C2, name="Relu_2")
         #P2 = tf.nn.max_pool(R2, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
@@ -128,7 +126,6 @@ class Generator_Graph:
 
         # Conv-Relu-MaxPool 3
         C3 = tf.nn.conv2d(R2, self.CNN3_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C3 = tf.nn.bias_add(C3, self.CNN3_bias)
         C3 = tf.contrib.layers.batch_norm(C3, decay=decay, is_training=is_training, updates_collections=None)
         R3 = tf.nn.relu(C3, name="Relu_3")
         #P3 = tf.nn.max_pool(R3, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
@@ -136,12 +133,10 @@ class Generator_Graph:
 
         # Conv-Relu-MaxPool 4
         C4 = tf.nn.conv2d(R3, self.CNN4_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C4 = tf.nn.bias_add(C4, self.CNN4_bias)
         C4 = tf.contrib.layers.batch_norm(C4, decay=decay, is_training=is_training, updates_collections=None)
         R4 = tf.nn.relu(C4, name="Relu_4")
 
         C5 = tf.nn.conv2d(R4, self.CNN5_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C5 = tf.nn.bias_add(C5, self.CNN5_bias)
         #C5 = tf.contrib.layers.batch_norm(C4, decay=decay, is_training=is_training, updates_collections=None)
         #R5 = tf.nn.relu(C4, name="Relu_5")
 
@@ -220,7 +215,6 @@ class Discriminator_Graph:
         stride=1
         # Conv-Relu-Conv-Relu-Maxpool
         C1 = tf.nn.conv2d(image, self.CNN1_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C1 = tf.nn.bias_add(C1, self.CNN1_bias)
         C1 = tf.contrib.layers.batch_norm(C1, decay=decay, is_training=is_training, updates_collections=None)
         R1 = tf.nn.relu(C1, name="DISC_Relu_1")
         P1 = tf.nn.max_pool(R1, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
@@ -228,7 +222,6 @@ class Discriminator_Graph:
 
         # Conv-Relu-Conv-Relu-Maxpool
         C3 = tf.nn.conv2d(P1, self.CNN3_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C3 = tf.nn.bias_add(C3, self.CNN3_bias)
         C3 = tf.contrib.layers.batch_norm(C3, decay=decay, is_training=is_training, updates_collections=None)
         R3 = tf.nn.relu(C3, name="DISC_Relu_3")
 
@@ -237,7 +230,6 @@ class Discriminator_Graph:
 
         # Conv-Relu * 4 times + Maxpool
         C5 = tf.nn.conv2d(P2, self.CNN5_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C5 = tf.nn.bias_add(C5, self.CNN5_bias)
         C5 = tf.contrib.layers.batch_norm(C5, decay=decay, is_training=is_training, updates_collections=None)
         R5 = tf.nn.relu(C5, name="DISC_Relu_5")
 
@@ -246,7 +238,6 @@ class Discriminator_Graph:
 
         # Conv-Relu * 4 times + Maxpool
         C9 = tf.nn.conv2d(P3, self.CNN9_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C9 = tf.nn.bias_add(C9, self.CNN9_bias)
         C9 = tf.contrib.layers.batch_norm(C9, decay=decay, is_training=is_training, updates_collections=None)
         R9 = tf.nn.relu(C9, name="DISC_Relu_9")
         P4 = tf.nn.max_pool(R9, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
@@ -255,7 +246,6 @@ class Discriminator_Graph:
         # Conv-Relu * 4 times + Maxpool
 
         C16 = tf.nn.conv2d(P4, self.CNN16_kernel, strides=[1, stride, stride, 1], padding="SAME")
-        C16 = tf.nn.bias_add(C16, self.CNN16_bias)
         C16 = tf.contrib.layers.batch_norm(C16, decay=decay, is_training=is_training, updates_collections=None)
         R16 = tf.nn.relu(C16, name="DISC_Relu_16")
 
@@ -506,4 +496,3 @@ class Discriminator_Graph_long:
 
     def discriminator(self, image, is_training, keep_prob):
         return self.Graph(image, is_training, keep_prob)
-
