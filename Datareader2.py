@@ -26,7 +26,14 @@ class Dataset:
 
     def read_image(self, path, size):   # this function reads image as float64
         image = Image.open(path)
-        ret = np.asarray(image.resize(size), dtype=np.uint8)
+        width, height = image.size
+        new_width, new_height = size
+        left = (width - new_width) / 2
+        top = (height - new_height) / 2
+        right = (width + new_width) / 2
+        bottom = (height + new_height) / 2
+
+        ret = np.asarray(image.crop((left, top, right, bottom)), dtype=np.uint8)
         return ret
 
     def change_format(self,image):
@@ -36,11 +43,11 @@ class Dataset:
         i_image = self.read_image(path, self.input_shape)
         # noise model
         if idx % 3 == 0:
-            i_image = degrade(i_image, ['blur', 'noise', 'saturate', 'compress'])
+            i_image = degrade(i_image, ['blur', 'saturate'])
         elif idx % 3 == 1:
-            i_image = degrade(i_image, ['noise', 'saturate', 'compress'])
-        else:
-            i_image = degrade(i_image, ['downscale', 'noise', 'compress'])
+            i_image = degrade(i_image, ['noise', 'saturate'])
+        elif idx % 3 == 2:
+            i_image = degrade(i_image, ['blur','noise', 'saturate'])
 
         g_image = self.read_image(path, self.gt_shape)
         return i_image.astype(np.float32), g_image.astype(np.float32)

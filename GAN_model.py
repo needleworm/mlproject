@@ -72,40 +72,42 @@ class Generator:
         self.Generator_Graph = Generator_Graph(is_training)
 
     def generate(self, image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE):
-        pred_annotation, logits = self.Generator_Graph.generator(image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE)
+        pred_annotation = self.Generator_Graph.generator(image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE)
 
-        return pred_annotation, logits
+        return pred_annotation
 
 
 class Generator_Graph:
     def __init__(self, is_training=True):
         self.is_training = is_training
         # Encoder
-        self.CNN1_shape  = [16, 1, 3, 128]
+        self.CNN1_shape  = [1, 121, 3, 38]
         self.CNN1_kernel = tf.get_variable("E_CNN_1_W", initializer=tf.truncated_normal(self.CNN1_shape, stddev=stddev))
         self.CNN1_bias   = tf.get_variable("E_CNN_1_B", initializer=tf.constant(0.0, shape=[self.CNN1_shape[-1]]))
 
-        self.CNN2_shape  = [1, 16, 128, 256]
+        self.CNN2_shape  = [121, 1, 38, 38]
         self.CNN2_kernel = tf.get_variable("E_CNN_2_W", initializer=tf.truncated_normal(self.CNN2_shape, stddev=stddev))
         self.CNN2_bias   = tf.get_variable("E_CNN_2_B", initializer=tf.constant(0.0, shape=[self.CNN2_shape[-1]]))
 
-        self.CNN3_shape  = [8, 8, 256, 512]
+        self.CNN3_shape  = [16, 16, 38, 512]
         self.CNN3_kernel = tf.get_variable("E_CNN_3_W", initializer=tf.truncated_normal(self.CNN3_shape, stddev=stddev))
         self.CNN3_bias   = tf.get_variable("E_CNN_3_B", initializer=tf.constant(0.0, shape=[self.CNN3_shape[-1]]))
 
-        self.CNN4_shape  = [4, 4, 512, 512]
+        self.CNN4_shape  = [1, 1, 512, 512]
         self.CNN4_kernel = tf.get_variable("E_CNN_4_W", initializer=tf.truncated_normal(self.CNN4_shape, stddev=stddev))
         self.CNN4_bias   = tf.get_variable("E_CNN_4_B", initializer=tf.constant(0.0, shape=[self.CNN4_shape[-1]]))
 
         # Decoder
-        self.CNN6_shape  = [4, 4, 512, 1024]
-        self.CNN6_kernel = tf.get_variable("D_CNN_6_W", initializer=tf.truncated_normal(self.CNN6_shape, stddev=stddev))
-        self.CNN6_bias   = tf.get_variable("D_CNN_6_B", initializer=tf.constant(0.0, shape=[self.CNN6_shape[-1]]))
+        self.CNN5_shape  = [8, 8, 512, 3]
+        self.CNN5_kernel = tf.get_variable("E_CNN_5_W", initializer=tf.truncated_normal(self.CNN5_shape, stddev=stddev))
+        self.CNN5_bias   = tf.get_variable("E_CNN_5_B", initializer=tf.constant(0.0, shape=[self.CNN5_shape[-1]]))
 
     def _Encoder(self, image, is_training):
+
+    #predict_y = tf.concat([o_conv5_R, o_conv5_G, o_conv5_B], 3)
+    #loss = tf.reduce_mean(tf.squared_difference(predict_y, high_resolution_image))
         net = []
-        net.append(image)
-        print(image.shape)
+        #net.append(image)
         stride=1
 
         # Conv-Relu-MaxPool 1
@@ -114,8 +116,7 @@ class Generator_Graph:
         C1 = tf.contrib.layers.batch_norm(C1, decay=decay, is_training=is_training, updates_collections=None)
         R1 = tf.nn.relu(C1, name="Relu_1")
         #P1 = tf.nn.max_pool(R1, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
-        net.append(R1)
-        print(R1.shape)
+        #net.append(R1)
 
         # Conv-Relu-MaxPool 2
         C2 = tf.nn.conv2d(R1, self.CNN2_kernel, strides=[1, stride, stride, 1], padding="SAME")
@@ -123,8 +124,7 @@ class Generator_Graph:
         C2 = tf.contrib.layers.batch_norm(C2, decay=decay, is_training=is_training, updates_collections=None)
         R2 = tf.nn.relu(C2, name="Relu_2")
         #P2 = tf.nn.max_pool(R2, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
-        net.append(R2)
-        print(R2.shape)
+        #net.append(R2)
 
         # Conv-Relu-MaxPool 3
         C3 = tf.nn.conv2d(R2, self.CNN3_kernel, strides=[1, stride, stride, 1], padding="SAME")
@@ -132,114 +132,31 @@ class Generator_Graph:
         C3 = tf.contrib.layers.batch_norm(C3, decay=decay, is_training=is_training, updates_collections=None)
         R3 = tf.nn.relu(C3, name="Relu_3")
         #P3 = tf.nn.max_pool(R3, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
-        net.append(R3)
-        print(R3.shape)
+        #net.append(R3)
 
         # Conv-Relu-MaxPool 4
         C4 = tf.nn.conv2d(R3, self.CNN4_kernel, strides=[1, stride, stride, 1], padding="SAME")
         C4 = tf.nn.bias_add(C4, self.CNN4_bias)
         C4 = tf.contrib.layers.batch_norm(C4, decay=decay, is_training=is_training, updates_collections=None)
         R4 = tf.nn.relu(C4, name="Relu_4")
-        print(R4.shape)
+
+        C5 = tf.nn.conv2d(R4, self.CNN5_kernel, strides=[1, stride, stride, 1], padding="SAME")
+        C5 = tf.nn.bias_add(C5, self.CNN5_bias)
+        #C5 = tf.contrib.layers.batch_norm(C4, decay=decay, is_training=is_training, updates_collections=None)
+        #R5 = tf.nn.relu(C4, name="Relu_5")
+
 
         #P4 = tf.nn.max_pool(R4, ksize=[1, 2, 2, 1], strides=[1,2,2,1], padding="SAME")
-        net.append(R4)
+        net.append(C5)
 
         return net
-
-    def _Decoder(self, encoder, keep_prob, is_training, IMAGE_SIZE, ANNO_RESIZE):
-        """
-        Semantic segmentation network definition
-        :param image: input image. Should have values in range 0-255
-        :param keep_prob:
-        :param is_training:
-        :return:
-        """
-        stride = 1
-        with tf.variable_scope("Decoder"):
-            # polling 5
-            encoder_final_layer = encoder[-1]
-            
-
-            # Conv-Relu-Dropout 6
-            C6 = tf.nn.conv2d(encoder_final_layer, self.CNN6_kernel, strides=[1, stride, stride, 1], padding="SAME")
-            C6 = tf.nn.bias_add(C6, self.CNN6_bias)
-            C6 = tf.contrib.layers.batch_norm(C6, decay=decay, is_training=is_training, updates_collections=None)
-            R6 = tf.nn.relu(C6)
-            print(R6.shape)
-
-            # Upscaling
-            # Deconv
-            self.deconv_shape_1 = encoder[4].shape.as_list()
-            self.DCNN1_shape = [4, 4, self.deconv_shape_1[3], R6.get_shape().as_list()[3]]
-            self.DCNN1_kernel = tf.get_variable("D_DCNN_1_W",
-                                                initializer=tf.truncated_normal(self.DCNN1_shape, stddev=stddev))
-            self.DCNN1_bias = tf.get_variable("D_DCNN_1_B", initializer=tf.constant(0.0, shape=[self.DCNN1_shape[-2]]))
-
-            self.deconv_shape_2 = encoder[3].shape.as_list()
-            self.DCNN2_shape = [4, 4, self.deconv_shape_2[3], self.deconv_shape_1[3]]
-            self.DCNN2_kernel = tf.get_variable("D_DCNN_2_W",
-                                                initializer=tf.truncated_normal(self.DCNN2_shape, stddev=stddev))
-            self.DCNN2_bias = tf.get_variable("D_DCNN_2_B", initializer=tf.constant(0.0, shape=[self.DCNN2_shape[-2]]))
-
-            self.deconv_shape_3 = encoder[2].shape.as_list()
-            self.DCNN3_shape = [8, 8, self.deconv_shape_3[3], self.deconv_shape_2[3]]
-            self.DCNN3_kernel = tf.get_variable("D_DCNN_3_W",
-                                                initializer=tf.truncated_normal(self.DCNN3_shape, stddev=stddev))
-            self.DCNN3_bias = tf.get_variable("D_DCNN_3_B", initializer=tf.constant(0.0, shape=[self.DCNN3_shape[-2]]))
-
-            self.deconv_shape_4 = encoder[1].shape.as_list()
-            self.DCNN4_shape = [1, 16, self.deconv_shape_4[3], self.deconv_shape_3[3]]
-            self.DCNN4_kernel = tf.get_variable("D_DCNN_4_W",
-                                                initializer=tf.truncated_normal(self.DCNN4_shape, stddev=stddev))
-            self.DCNN4_bias = tf.get_variable("D_DCNN_4_B", initializer=tf.constant(0.0, shape=[self.DCNN4_shape[-2]]))
-
-            self.deconv_shape_5 = encoder[0].shape.as_list()
-            self.DCNN5_shape = [16, 1, self.deconv_shape_5[3], self.deconv_shape_4[3]]
-            self.DCNN5_kernel = tf.get_variable("D_DCNN_5_W",
-                                                initializer=tf.truncated_normal(self.DCNN5_shape, stddev=stddev))
-            self.DCNN5_bias = tf.get_variable("D_DCNN_5_B", initializer=tf.constant(0.0, shape=[3]))
-
-            stride = 1
-
-            # Deconv 1
-            DC1 = tf.nn.conv2d_transpose(R6, self.DCNN1_kernel, self.deconv_shape_1, strides=[1, stride, stride, 1], padding="SAME")
-            DC1 = tf.nn.bias_add(DC1, self.DCNN1_bias, name="deconv_bias_add_1")
-            F1 = tf.add(DC1, encoder[4], name="fuse_1")
-            print(F1.shape)
-
-            # Deconv 2
-            DC2 = tf.nn.conv2d_transpose(F1, self.DCNN2_kernel, self.deconv_shape_2, strides=[1, stride, stride, 1], padding="SAME")
-            DC2 = tf.nn.bias_add(DC2, self.DCNN2_bias, name="deconv_bias_add_2")
-            F2 = tf.add(DC2, encoder[3], name="fuse_2")
-            print(F2.shape)
-
-            # Deconv 3
-            DC3 = tf.nn.conv2d_transpose(F2, self.DCNN3_kernel, self.deconv_shape_3, strides=[1, stride, stride, 1], padding="SAME")
-            DC3 = tf.nn.bias_add(DC3, self.DCNN3_bias, name="deconv_bias_add_3")
-            F3 = tf.add(DC3, encoder[2], name="fuse_3")
-            print(F3.shape)
-
-            # Deconv 4
-            DC4 = tf.nn.conv2d_transpose(F3, self.DCNN4_kernel, self.deconv_shape_4, strides=[1, stride, stride, 1], padding="SAME")
-            DC4 = tf.nn.bias_add(DC4, self.DCNN4_bias, name="deconv_bias_add_4")
-            F4 = tf.add(DC4, encoder[1], name="fuse_4")
-            print(F4.shape)
-
-            # Deconv 5
-            scale_factor = int(self.deconv_shape_5[1] / F4.get_shape().as_list()[1])
-            DC5 = tf.nn.conv2d_transpose(F4, self.DCNN5_kernel, self.deconv_shape_5, strides=[1, scale_factor, scale_factor, 1], padding="SAME")
-            DC5 = tf.nn.bias_add(DC5, self.DCNN5_bias, name="deconv_bias_add_5")
-
-            output = tf.nn.relu(DC5)
-            print(output.shape)
-        return output, DC5
+        #return C5
 
     def generator(self, image, is_training, keep_prob, IMAGE_SIZE, IMAGE_RESIZE):
         self.encoder = self._Encoder(image, is_training)
-        self.decoder = self._Decoder(self.encoder, keep_prob, is_training, IMAGE_SIZE, IMAGE_RESIZE)
-        return self.decoder
-
+        #self.decoder = self._Decoder(self.encoder, keep_prob, is_training, IMAGE_SIZE, IMAGE_RESIZE)
+        #return self.decoder
+        return self.encoder
 
 class Discriminator:
     def __init__(self, is_training=True, IMAGE_SIZE=1024, IMAGE_RESIZE=1.0, keep_prob=0.5):
