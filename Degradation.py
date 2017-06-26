@@ -11,11 +11,11 @@ def degrade(image, degrade_type):
         # IBlur = imfilter(I, K, 'conv', 'replicate');
         # IBlur = uint8((IBlur)*255+0.5);
         # IBlur = imnoise(IBlur, 'gaussian', 0, 0.0005);
-        degrade_image = filters.gaussian(degrade_image, sigma=0.25, multichannel=True)
+        degrade_image = filters.gaussian(degrade_image, sigma=1, multichannel=True)
 
 
     if ("noise" in degrade_type):
-        degrade_image = util.random_noise(degrade_image, mode='gaussian', clip=True, mean=0, var=0.0005)
+        degrade_image = util.random_noise(degrade_image, mode='gaussian', clip=True, mean=0, var=0.005)
 
 
     if ("saturate" in degrade_type):

@@ -26,7 +26,8 @@ __author__ = 'BHBAN'
 
 logs_dir = "logs"
 training_data_dir = "images/train/"
-validation_data_dir = "images/validation/"
+validation_data_dir = "images/train/"
+#validation_data_dir = "images/validation/"
 
 np.set_printoptions(suppress=True)
 
@@ -34,10 +35,10 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
 tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
-tf.flags.DEFINE_bool("reset", "True", "mode : True or False. [Default : train]")
-tf.flags.DEFINE_integer("tr_batch_size", "1", "batch size for training. [default : 5]")
-tf.flags.DEFINE_integer("vis_batch_size", "1", "batch size for visualization. [default : 5]")
-tf.flags.DEFINE_integer("val_batch_size", "1", "batch size for validation. [default : 5]")
+tf.flags.DEFINE_bool("reset", "False", "mode : True or False. [Default : train]")
+tf.flags.DEFINE_integer("tr_batch_size", "4", "batch size for training. [default : 5]")
+tf.flags.DEFINE_integer("vis_batch_size", "4", "batch size for visualization. [default : 5]")
+tf.flags.DEFINE_integer("val_batch_size", "4", "batch size for validation. [default : 5]")
 
 if FLAGS.mode is 'visualize':
     FLAGS.reset = False
@@ -47,6 +48,7 @@ if FLAGS.reset:
     if 'win32' in sys.platform:
         os.popen('rmdir /s /q ' + logs_dir)
     else:
+        os.popen('rm -rf ' + logs_dir + "/*/*")
         os.popen('rm -rf ' + logs_dir + "/*")
         os.popen('rm -rf ' + logs_dir)
 
@@ -60,19 +62,20 @@ if FLAGS.reset:
     os.popen('mkdir ' + logs_dir + '/valid/loss_g')
     os.popen('mkdir ' + logs_dir + '/valid/loss_d')
     os.popen('mkdir ' + logs_dir + '/images')
+    os.popen('mkdir ' + logs_dir + '/images/train')
     os.popen('mkdir ' + logs_dir + '/visualize_result')
 
 learning_rate = 0.00001
 MAX_ITERATION = int(300000)
-IMAGE_RESIZE = 0.25
-IMAGE_SIZE = 1024
-GT_RESIZE = 0.25
+IMAGE_RESIZE = 1
+IMAGE_SIZE = 64
+GT_RESIZE = 1
 POS_WEIGHT = 0.1
 decay = 0.9
 stddev = 0.02
 stride = 1
 keep_prob = 0.5
-
+loss_flag = True
 
 class GAN:
     def __init__(self, batch_size, is_training=True):
@@ -84,7 +87,8 @@ class GAN:
         self.Discriminator = GM.Discriminator(is_training)
 
         with tf.variable_scope('G'):
-            self.rgb_predict, _ = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability, IMAGE_SIZE, IMAGE_RESIZE)
+            self.rgb_predict = self.Generator.generate(self.low_resolution_image, is_training, self.keep_probability, IMAGE_SIZE, IMAGE_RESIZE)
+            self.rgb_predict = self.rgb_predict[0]
         with tf.variable_scope('D') as scope2:
             self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
             #scope2.reuse_variables()
@@ -107,14 +111,17 @@ class GAN:
         """
         self.loss_g = tf.reduce_mean(tf.squared_difference(self.rgb_predict, self.high_resolution_image))
         self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2)) + self.loss_g
+        self.learning_rate = tf.placeholder(tf.float32)
 
         trainable_var = tf.trainable_variables()
 
         self.train_op_d, self.train_op_g = self.train(trainable_var)
 
     def train(self, var_list):
-        optimizer1 = tf.train.AdamOptimizer(learning_rate)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate)
+        #optimizer1 = tf.train.AdamOptimizer(learning_rate)
+        #optimizer2 = tf.train.AdamOptimizer(learning_rate)
+        optimizer1 = tf.train.AdamOptimizer(self.learning_rate)
+        optimizer2 = tf.train.AdamOptimizer(self.learning_rate) 
         grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
         grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
 
@@ -181,17 +188,20 @@ def train(is_training=True):
     else:
         sess.run(tf.global_variables_initializer())  # if the checkpoint doesn't exist, do initialization
     print("Done")
-
+    
+    learning_rate_local = learning_rate
+    loss_flag = True
      #############################     Train      ###############################
     if FLAGS.mode == "train":
-        train_dataset_reader = dr2.Dataset(path=training_data_dir,
+        train_dataset_reader = dr.Dataset(path=training_data_dir,
                                           input_shape=(int(IMAGE_SIZE * IMAGE_RESIZE), int(IMAGE_SIZE * IMAGE_RESIZE)),
                                           gt_shape=(int(IMAGE_SIZE * GT_RESIZE), int(IMAGE_SIZE * GT_RESIZE)))
         for itr in range(MAX_ITERATION):
             train_low_resolution_image, train_high_resolution_image = train_dataset_reader.next_batch(FLAGS.tr_batch_size)
             train_dict = {m_train.low_resolution_image: train_low_resolution_image,
                          m_train.high_resolution_image: train_high_resolution_image,
-                         m_train.keep_probability: keep_prob}
+                         m_train.keep_probability: keep_prob,
+                         m_train.learning_rate: learning_rate_local}
             sess.run([m_train.train_op_d, m_train.train_op_g], feed_dict=train_dict)
 
             if itr % 10 == 0:
@@ -253,10 +263,23 @@ def train(is_training=True):
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
-                utils.save_images(FLAGS.val_batch_size, logs_dir + '/images', visual_low_resolution_image, predict,
+                utils.save_images(FLAGS.tr_batch_size, logs_dir + "/" + training_data_dir, train_low_resolution_image,train_pred.astype('float32'),
+                                  train_high_resolution_image.astype('float32'), itr, show_image=False)
+                print('Train images were saved!')
+                utils.save_images(FLAGS.val_batch_size, logs_dir + '/images/', visual_low_resolution_image, predict,
                                   visual_high_resolution_image, itr, show_image=False)
                 print('Validation images were saved!')
-
+            
+            if (train_loss_g < 10) and (loss_flag is True):
+                learning_rate_local = learning_rate_loacl
+            elif (train_loss_g < 200) and (loss_flag is True):
+                learning_rate_local = learning_rate_local * 0.01
+                loss_flag = False
+                print('learning rate change!')
+            elif (train_loss_g < 10) and (loss_flag is False):
+                learning_rate_local = learning_rate_local * 0.01
+                loss_flag = True
+                print('learning rate change!')
     ###########################     Visualize     ##############################
     elif FLAGS.mode == "visualize":
 
