@@ -5,7 +5,7 @@
     latest modification :
         2017.05.23.
 """
- 
+
 
 from __future__ import print_function
 import tensorflow as tf
@@ -33,7 +33,8 @@ np.set_printoptions(suppress=True)
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "mode : train/ test/ visualize/ evaluation [default : train]")
-tf.flags.DEFINE_string("device", "/gpu:0", "device : /cpu:0, /gpu:0, /gpu:1. [Default : /gpu:0]")
+tf.flags.DEFINE_string('train_device', '/gpu:0', "device : /cpu:0 /gpu:0 /gpu:1 [default : /gpu:0]")
+tf.flags.DEFINE_string('valid_device', '/cpu:0', "device : /cpu:0 /gpu:0 /gpu:1 [default : /gpu:0]")
 tf.flags.DEFINE_bool("Train", "True", "mode : train, test. [Default : train]")
 tf.flags.DEFINE_bool("reset", "False", "mode : True or False. [Default : train]")
 tf.flags.DEFINE_integer("tr_batch_size", "4", "batch size for training. [default : 5]")
@@ -121,7 +122,7 @@ class GAN:
         #optimizer1 = tf.train.AdamOptimizer(learning_rate)
         #optimizer2 = tf.train.AdamOptimizer(learning_rate)
         optimizer1 = tf.train.AdamOptimizer(self.learning_rate)
-        optimizer2 = tf.train.AdamOptimizer(self.learning_rate) 
+        optimizer2 = tf.train.AdamOptimizer(self.learning_rate)
         grads_d = optimizer1.compute_gradients(self.loss_d, var_list=var_list)
         grads_g = optimizer2.compute_gradients(self.loss_g, var_list=var_list)
 
@@ -132,9 +133,10 @@ class GAN:
 def train(is_training=True):
     ###############################  GRAPH PART  ###############################
     print("Graph Initialization...")
-    with tf.device(FLAGS.device):
+    with tf.device(FLAGS.train_device):
         with tf.variable_scope("model", reuse=None):
             m_train = GAN(FLAGS.tr_batch_size, is_training=True)
+    with tf.device(FLAGS.valid_device):
         with tf.variable_scope("model", reuse=True):
             m_valid = GAN(FLAGS.val_batch_size, is_training=False)
     print("Done")
@@ -188,7 +190,7 @@ def train(is_training=True):
     else:
         sess.run(tf.global_variables_initializer())  # if the checkpoint doesn't exist, do initialization
     print("Done")
-    
+
     learning_rate_local = learning_rate
     loss_flag = True
      #############################     Train      ###############################
@@ -269,7 +271,7 @@ def train(is_training=True):
                 utils.save_images(FLAGS.val_batch_size, logs_dir + '/images/', visual_low_resolution_image, predict,
                                   visual_high_resolution_image, itr, show_image=False)
                 print('Validation images were saved!')
-            
+
             if (train_loss_g < 10) and (loss_flag is True):
                 learning_rate_local = learning_rate_loacl
             elif (train_loss_g < 200) and (loss_flag is True):
