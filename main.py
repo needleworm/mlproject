@@ -26,7 +26,7 @@ __author__ = 'BHBAN'
 
 logs_dir = "logs"
 training_data_dir = "images/train/"
-validation_data_dir = "images/train/"
+validation_data_dir = "images/valid/"
 #validation_data_dir = "images/validation/"
 
 np.set_printoptions(suppress=True)
@@ -93,7 +93,7 @@ class GAN:
         with tf.variable_scope('D') as scope2:
             self.D1, _ = self.Discriminator.discriminate(self.high_resolution_image, is_training, self.keep_probability)
             #scope2.reuse_variables()
-            self.D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability)
+            self.D2, _ = self.Discriminator.discriminate(self.rgb_predict, is_training, self.keep_probability, reuse=True)
 
         # basic loss
         #self.loss = tf.reduce_mean(-tf.log(self.D1) - tf.log(1 - self.D2))
@@ -111,7 +111,7 @@ class GAN:
             With this process, We hope the generator to draw better image.
         """
         self.loss_g = tf.reduce_mean(tf.squared_difference(self.rgb_predict, self.high_resolution_image))
-        self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2)) + self.loss_g
+        self.loss_d = tf.reduce_mean(-tf.log(self.D1) - tf.log(1-self.D2)) + 10e-3*self.loss_g
         self.learning_rate = tf.placeholder(tf.float32)
 
         trainable_var = tf.trainable_variables()
@@ -265,10 +265,10 @@ def train(is_training=True):
                                m_valid.high_resolution_image: visual_high_resolution_image,
                                m_valid.keep_probability: 1.0}
                 predict = sess.run(m_valid.rgb_predict, feed_dict=visual_dict)
-                utils.save_images(FLAGS.tr_batch_size, logs_dir + "/" + training_data_dir, train_low_resolution_image,train_pred.astype('float32'),
+                utils.save_images(FLAGS.tr_batch_size, logs_dir + "/train/" , train_low_resolution_image,train_pred.astype('float32'),
                                   train_high_resolution_image.astype('float32'), itr, show_image=False)
                 print('Train images were saved!')
-                utils.save_images(FLAGS.val_batch_size, logs_dir + '/images/', visual_low_resolution_image, predict,
+                utils.save_images(FLAGS.val_batch_size, logs_dir + '/valid/', visual_low_resolution_image, predict,
                                   visual_high_resolution_image, itr, show_image=False)
                 print('Validation images were saved!')
 

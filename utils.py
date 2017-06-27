@@ -59,7 +59,7 @@ def save_images(batch_size, directory, input_image, output_image, ground_truth, 
     label = 'PSNR: {:.2f} SSIM: {:.2f}'
 
     for i in range(batch_size):
-        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(5, 2), sharex=True, sharey=True,
+        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 4), sharex=True, sharey=True,
                                  subplot_kw={'adjustable': 'box-forced'})
         ax = axes.ravel()
         visual_psnr = ev.psnr(1, ground_truth[i], input_image[i])
